@@ -1,0 +1,65 @@
+---
+import '../styles/globals.css';
+import { AppHeader } from '../components/layout/AppHeader';
+import { Sidebar } from '../components/layout/Sidebar';
+
+interface Props {
+  title?: string;
+  panel?: 'helper' | 'needer';
+  showSidebar?: boolean;
+}
+
+const {
+  title = "KindMinds — Humanitarian & Mental Health Response Platform",
+  panel = "needer",
+  showSidebar = true
+} = Astro.props;
+
+const currentPath = Astro.url.pathname;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="description" content="AI-Powered Mental Health Support & Humanitarian Disaster Response Platform" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <title>{title}</title>
+  </head>
+  <body class="bg-surface text-charcoal min-h-screen flex flex-col font-sans">
+    <!-- A11y Skip Link (WCAG 2.2 Requirement for Screen Readers & Keyboard Navigation) -->
+    <a
+      href="#main-content"
+      class="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[100] focus:px-4 focus:py-2 focus:bg-charcoal focus:text-white focus:rounded focus:ring-2 focus:ring-terracotta focus:outline-none text-xs font-bold"
+    >
+      Skip to main content
+    </a>
+
+    <AppHeader currentPanel={panel} client:load />
+
+    <div class="flex-1 max-w-7xl w-full mx-auto flex flex-col md:flex-row">
+      {showSidebar && (
+        <Sidebar panel={panel} currentPath={currentPath} client:load />
+      )}
+
+      <main id="main-content" tabindex="-1" class="flex-1 p-4 md:p-8 min-w-0 outline-none">
+        <slot />
+      </main>
+    </div>
+
+    <footer class="mt-auto border-t border-stone-200/80 bg-surface-raised py-6 px-4 text-center text-xs text-charcoal-muted">
+      <div class="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2">
+        <p>
+          <strong>KindMinds Platform</strong> — Humanitarian Bauhaus Architecture • Powered by Neon PostGIS, FastAPI, and Groq AI
+        </p>
+        <p class="text-[11px]">
+          Life Safety Notice: For immediate life-threatening crises, dial <strong>112 / 911</strong>.
+        </p>
+      </div>
+    </footer>
+  </body>
+</html>

@@ -1,0 +1,4 @@
+allowBuilds:
+  '@img/sharp-win32-x64': true
+  esbuild: true
+  sharp: true

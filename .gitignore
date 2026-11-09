@@ -1,0 +1,44 @@
+# Environment files (CRITICAL: Skip all secrets and environment files)
+.env
+.env.*
+!.env.example
+*.env
+*.env.local
+backend/.env
+frontend/.env
+
+# Local database files
+*.db
+*.sqlite
+*.sqlite3
+kindminds_dev.db
+
+# Dependencies & build outputs
+node_modules/
+frontend/node_modules/
+dist/
+frontend/dist/
+.astro/
+frontend/.astro/
+
+# Python virtual environments & bytecode
+backend/.venv/
+.venv/
+venv/
+env/
+__pycache__/
+backend/app/**/__pycache__/
+*.py[cod]
+*$py.class
+
+# Neon internal credentials & state
+.neon
+.neon/
+
+# Temporary reference clone
+public-apis-ref/
+
+# OS and Editor files
+.DS_Store
+Thumbs.db
+*.log

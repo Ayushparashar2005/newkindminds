@@ -1,0 +1,114 @@
+---
+import Layout from '../layouts/Layout.astro';
+import { DemoBanner } from '../components/ui/DemoBanner';
+import { AlertBanner } from '../components/ui/AlertBanner';
+import {
+  HeartHandshake,
+  UserPlus,
+  ArrowRight
+} from 'lucide-react';
+---
+
+<Layout title="KindMinds — AI Humanitarian & Mental Health Platform" showSidebar={false}>
+  <div class="max-w-5xl mx-auto py-8 md:py-12 space-y-8">
+    <DemoBanner client:load />
+    <AlertBanner client:load />
+
+    {/* Hero Section */}
+    <div class="text-center space-y-4 max-w-3xl mx-auto">
+      <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-stone-200/70 border border-stone-300 text-xs font-bold text-charcoal uppercase tracking-wider">
+        <span class="w-2 h-2 rounded-full bg-terracotta"></span>
+        Unified Disaster & Mental Health Coordination
+      </div>
+      <h1 class="text-4xl md:text-5xl font-black text-charcoal tracking-tight leading-tight">
+        Connecting Affected Communities with Verified Humanitarian Care
+      </h1>
+      <p class="text-sm md:text-base text-charcoal-light leading-relaxed max-w-2xl mx-auto">
+        KindMinds brings together mental-health grounding, disaster preparedness, relief resource mapping, and humanitarian NGO coordination into exactly two dedicated portals.
+      </p>
+    </div>
+
+    {/* THE TWO PRIMARY USER PANELS SELECTION */}
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
+      {/* PANEL 1: NEEDER PANEL */}
+      <div class="neu-card p-8 border-l-4 border-terracotta flex flex-col justify-between space-y-6 hover:shadow-neu-raised transition">
+        <div class="space-y-3">
+          <div class="w-12 h-12 rounded-xl bg-terracotta/10 text-terracotta flex items-center justify-center font-bold">
+            <UserPlus className="w-6 h-6" />
+          </div>
+          <span class="text-xs font-bold uppercase tracking-wider text-terracotta">Panel 1</span>
+          <h2 class="text-2xl font-black text-charcoal">Needer Panel</h2>
+          <p class="text-xs text-charcoal-muted font-medium">Route: <code class="bg-stone-200 px-1.5 py-0.5 rounded text-charcoal font-mono">/needer</code></p>
+          <p class="text-xs md:text-sm text-charcoal-light leading-relaxed">
+            For individuals and families affected by natural disasters, facing displacement, needing clean drinking water, emergency food, medical supplies, shelter, evacuation, or trauma mental-health support.
+          </p>
+
+          <div class="pt-2 space-y-1.5 text-xs text-charcoal">
+            <div class="flex items-center gap-2 font-medium">✓ Request humanitarian assistance in 3 simple steps</div>
+            <div class="flex items-center gap-2 font-medium">✓ Find verified nearby shelters & hospitals</div>
+            <div class="flex items-center gap-2 font-medium">✓ 5-4-3-2-1 grounding & private trauma journal</div>
+            <div class="flex items-center gap-2 font-medium">✓ Household 72-hour survival kit preparedness</div>
+          </div>
+        </div>
+
+        <a
+          href="/needer"
+          class="w-full py-3 bg-terracotta text-white rounded-lg text-sm font-bold hover:bg-terracotta-hover transition text-center shadow-sm flex items-center justify-center gap-2"
+        >
+          Enter Needer Panel <ArrowRight className="w-4 h-4" />
+        </a>
+      </div>
+
+      {/* PANEL 2: HELPER PANEL */}
+      <div class="neu-card p-8 border-l-4 border-dustyblue flex flex-col justify-between space-y-6 hover:shadow-neu-raised transition">
+        <div class="space-y-3">
+          <div class="w-12 h-12 rounded-xl bg-dustyblue/10 text-dustyblue flex items-center justify-center font-bold">
+            <HeartHandshake className="w-6 h-6" />
+          </div>
+          <span class="text-xs font-bold uppercase tracking-wider text-dustyblue">Panel 2</span>
+          <h2 class="text-2xl font-black text-charcoal">Helper Panel</h2>
+          <p class="text-xs text-charcoal-muted font-medium">Route: <code class="bg-stone-200 px-1.5 py-0.5 rounded text-charcoal font-mono">/helper</code></p>
+          <p class="text-xs md:text-sm text-charcoal-light leading-relaxed">
+            A single, unified operations desk for all assistance providers: humanitarian NGOs, relief agencies, medical teams, search-and-rescue squads, shelter operators, and authorized volunteers.
+          </p>
+
+          <div class="pt-2 space-y-1.5 text-xs text-charcoal">
+            <div class="flex items-center gap-2 font-medium">✓ Live triage, accept & assign assistance requests</div>
+            <div class="flex items-center gap-2 font-medium">✓ Stockpile inventory & bunker depot management</div>
+            <div class="flex items-center gap-2 font-medium">✓ Coordinate Swift-water SAR & drone search teams</div>
+            <div class="flex items-center gap-2 font-medium">✓ Regional relief coverage & resource flow analytics</div>
+          </div>
+        </div>
+
+        <a
+          href="/helper"
+          class="w-full py-3 bg-dustyblue text-white rounded-lg text-sm font-bold hover:bg-dustyblue-hover transition text-center shadow-sm flex items-center justify-center gap-2"
+        >
+          Enter Helper Operations <ArrowRight className="w-4 h-4" />
+        </a>
+      </div>
+    </div>
+
+    {/* Shared Modules Quick Links */}
+    <div class="pt-6 border-t border-stone-200">
+      <h3 class="text-center text-xs font-extrabold uppercase tracking-wider text-charcoal-muted mb-4">
+        Shared Universal Disaster Infrastructure
+      </h3>
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-3 text-center">
+        <a href="/disaster/map" class="neu-card p-3.5 hover:bg-surface-raised transition text-xs font-bold text-charcoal">
+          📍 Geospatial Relief Map
+        </a>
+        <a href="/disaster/organizations" class="neu-card p-3.5 hover:bg-surface-raised transition text-xs font-bold text-charcoal">
+          🏛️ NGO & Agency Directory
+        </a>
+        <a href="/disaster/sop" class="neu-card p-3.5 hover:bg-surface-raised transition text-xs font-bold text-charcoal">
+          📋 Verified SOP Library
+        </a>
+        <a href="/disaster/impact" class="neu-card p-3.5 hover:bg-surface-raised transition text-xs font-bold text-charcoal">
+          📊 Regional Relief Analytics
+        </a>
+      </div>
+    </div>
+  </div>
+</Layout>
+

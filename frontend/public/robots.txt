@@ -1,0 +1,7 @@
+# KindMinds Humanitarian Platform Robots
+User-agent: *
+Disallow: /helper/
+Disallow: /needer/
+Allow: /disaster/
+Allow: /
+

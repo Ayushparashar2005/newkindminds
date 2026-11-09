@@ -1,0 +1,102 @@
+---
+title: gotchas
+summary: Lived failures. Append a one-liner every time the agent gets a UI detail wrong.
+tags: [gotchas, append-only]
+---
+
+# Gotchas
+
+This file is **append-only**. Each time the agent (or you) gets a UI detail wrong in practice, add a one-line gotcha here. Do not edit existing entries unless they're outright wrong.
+
+The Perplexity Agent Skills team calls this the "gotchas flywheel." Negative examples are the highest-signal content in a skill over time. The skill's description and instructions should change rarely; this file should grow steadily.
+
+## Format
+
+```text
+- [YYYY-MM-DD] One-line description of the gotcha. → fix in [[node-name]]
+```
+
+## Starter gotchas
+
+- [2026-05-21] Agent set `transition: all` on a card with `width` defined. Caused layout thrash on hover. → Animate only `transform` and `opacity`. See [[transform-opacity-only]].
+- [2026-05-21] Agent generated a hover state with `transform: translateY(-4px)` on a list row. Felt bouncy and amateur. → 1px shifts. See [[hover-states-subtle]].
+- [2026-05-21] Agent reached for `<Spinner />` on a 200ms API call. Created a flash. → No spinner under 800ms. See [[empty-loading-states]].
+- [2026-05-21] Agent crossfaded two icons for play/pause toggle. Looked like two separate elements. → Transform a single icon. See [[fly-not-teleport]] and [[icon-systems]].
+- [2026-05-21] Agent set `prefers-reduced-motion` to disable *all* animations including 120ms opacity fades. Made the UI feel broken. → Disable translations/scales, keep opacity. See [[prefers-reduced-motion]].
+- [2026-05-21] Agent used a single 16px shadow for elevation. Looked flat. → Layered shadows at 4–6% opacity. See [[shadows-whisper]].
+- [2026-05-21] Agent picked Inter for a marketing page. Indistinguishable from every other AI page. → Pangram, Geist, or Displaay. See [[typography-humanity]].
+- [2026-05-21] Agent applied `prefers-reduced-motion` to disable a loading spinner without providing a static replacement. Critical accessibility miss. See [[prefers-reduced-motion]].
+- [2026-09-05] Agent added a click sound to every button and a "whoosh" to every route change. Users muted the whole site within a day. → Sound only on daily and rare moments, off by default. See [[sound-decision-framework]].
+- [2026-09-05] Agent created `new AudioContext()` at module load; sounds silently dropped until the second click. → Create and resume inside the first user gesture. See [[sound-playback-web]].
+- [2026-09-05] Agent shipped a generated "success" sound with 40ms of leading silence; it read as lagging behind the check animation. → Trim to the first sample above −60 dBFS; transient on the contact frame. See [[sound-spec]] and [[sound-motion-sync]].
+- [2026-09-05] Agent prompted ElevenLabs with "futuristic UI success sound" and got a stock jingle with reverb. → Describe a material and a stick, add "dry, no tail", request 0.5s and cut. See [[sound-generation-elevenlabs]].
+- [2026-09-05] Agent pulled five sounds from three CC0 packs; the product sounded like a browser toolbar. → One material per product; re-pitch a single family. See [[sound-palette]].
+- [2026-09-05] Agent laid a music bed under a logo reveal to hide the sync work; the piece felt cheap. → Cut with no bed first; place hits on frames; add a bed at −24 LUFS or not at all. See [[launch-video-sound]].
+
+## Why this file matters
+
+A skill's description and main nodes encode the **happy path** — what to do. Gotchas encode the **failure mode** — what *not* to do, with examples. The model uses both to triangulate.
+
+The Perplexity team finds gotchas often help more than positive guidance. If you're unsure whether a piece of advice belongs in a main node or here, **prefer here**.
+
+## When to add
+
+- Every time the agent gets a detail wrong.
+- Every time a real user reports a UI issue caused by AI-generated code.
+- Every time a code review flags a regression on a polished interaction.
+
+## Don't put
+
+- Things the model already knows from training data (write commands, syntax).
+- Personal taste calls — those go in [[pov]].
+- Long explanations — keep gotchas to one line. If it needs explanation, link to a node.
+
+— append below this line —
+- [2026-09-05] Agent copied the parent's 16px radius onto a nested card; corners pinched. → inner = outer − padding. See [[depth-and-nesting]].
+- [2026-09-05] Agent "fixed" grey-on-grey text by raising saturation; contrast unchanged. → move L only. See [[color-scales-oklch]].
+- [2026-09-05] Agent put `text-wrap: balance` on body paragraphs; every column narrowed. → headings balance, paragraphs don't. See [[line-behavior]].
+- [2026-09-05] Agent hid a closed drawer with `opacity: 0`; keyboard users tabbed into it. → `inert` or `visibility: hidden`. See [[touch-and-focus]].
+- [2026-09-05] Agent sprinkled `will-change: transform` on every card "for performance". → only after an observed first-frame hitch. See [[performance-discipline]].
+- [2026-09-05] Agent restyled a generated hero without deleting anything; the tells survived under new colors. → subtract first. See [[unslop-pass]].
+- [2026-09-05] Agent rotated an SVG arm around (0,0) — it orbited the corner. → `transform-box: fill-box` + explicit origin. See [[svg-animation]].
+- [2026-09-05] Agent morphed a four-line rect into a four-arc circle with CSS `d`; Safari jumped. → same command count and type. See [[svg-path-morphing]].
+- [2026-09-05] Agent loaded four craft skills at once for one review and applied none properly. → one or two owners. See [[skill-router]].
+- [2026-09-28] Agent chained 60 s of morphs because "launch films don't cut"; it read as a screensaver. → Cut on a cause, a constant ground or the element being read; Skale's client films cut ~4/min, acclaimed in-house or uncredited films ~16/min. See [[launch-video-cuts]].
+- [2026-09-28] Agent crossfaded two opaque scenes on the same ground; the midpoint dimmed like a flash. → Hard-cut on a continuous ground, or fade the content to a bare surface identical to the next first frame, then cut. See [[launch-video-cuts]].
+- [2026-09-28] Agent answered a pull-back exit (scale → 0.8) with a grow-from-small entry (0.75 → 1); the seam stuttered. → Z direction is the sign of scale: 1.2 answers 0.75, 0.8 answers 1.25. See [[launch-video-seams]].
+- [2026-09-28] Agent put a zeta-1/3 spring on every arrival in a brand film; it read as a toy. → Exponential settle by default; visible overshoot is a register (4 of 29 Skale films, 3 of 18 acclaimed). See [[launch-video-motion]].
+- [2026-09-28] Agent added a breathe loop (`yoyo`, `repeat: -1`) to a held card to keep it alive. → Nothing decorative moves on a UI object; creep the camera on its entry vector or add story. See [[launch-video-motion]].
+- [2026-09-28] Agent resampled a 24 fps reference to 30 fps and quoted a studio reel as house style; pulldown faked 4-frame moves, and the reel is 33 % still against 12 % for the client films. → Native fps, cuts recounted by eye, compare within a register. See [[launch-video-review]].
+- [2026-09-28] Agent typed a prompt the viewer must read at 50 characters a second. → ~15 c/s to be read, ~53 only to be recognised. See [[launch-video-ui-demo]].
+- [2026-09-28] Agent mastered a 60 s walkthrough to −14 LUFS "because platforms normalize". → Loudness is a register choice (medians ≈ −18 LUFS; the four loudest acclaimed films all run 38 s or less, at −12 to −13); keep −1 dBTP. See [[launch-video-sound]].
+- [2026-09-28] Agent laid a retrieved music bed from 0 s at a flat level; the drop landed on nothing. → Trim the head so the drop lands on the reveal; break down under reading. See [[launch-video-music]].
+- [2026-09-28] Agent placed a library click by its file start; 158 ms of baked lead-in landed it 4 frames late at 24 fps. → Onset = first sample above 5 % of peak; trim it and place it where the press bottoms out. See [[sound-motion-sync]].
+- [2026-09-28] Agent mixed the film's sound in an editor after render; the next re-render shipped silent. → Every audio clip lives in the composition, each `<audio>` with its own id (an id-less one renders silent). See [[sound-from-motion]].
+- [2026-09-28] Agent followed HyperFrames' distributed crossfade default and jitter loops inside a motion-doctrine project. → Where HyperFrames' layers disagree, motion-doctrine wins. See [[hyperframes-reconciliation]].
+- [2026-09-28] Correction to the 2026-09-05 bed entry: its −24 LUFS was never measured. → A reveal under 15 s takes no bed (register A); any other bed or track needs its structure on picture events, at a loudness written for the register (−1 dBTP is the only fixed number). See [[launch-video-sound]] and [[launch-video-music]].
+- [2026-10-08] supermemoryai `svg-animations`, a source this graph cites, lists `keySplines="0.34 1.56 0.64 1"` as a bounce. SMIL control points must stay within 0–1, so an agent that copies it gets an animation the browser rejects. → Make SMIL overshoot an extra keyframe in `values` / `keyTimes`, and keep every spline within 0–1. See [[svg-animation]].
+- [2026-10-08] Agent pinned `better-icons@1.0.5` from the repo's `package.json`; npm's latest was 1.0.4, so the pinned MCP server could not install. → Pin from `npm view <pkg> version`, never from a repo manifest. See [[skill-router]].
+- [2026-10-19] This graph told agents a whoosh "peaks on the settle"; a moving thing is loudest at its fastest, so an entrance's whoosh peaked on its slowest frame. → Peak on the fastest frame (the cut for an exit, mid-travel for a cross); a decelerating entrance gets an early whoosh and a landing sound on the settle. See [[sound-motion-sync]].
+- [2026-10-19] Agent mastered a launch film to −14 LUFS because earshot's and cinetic's references say so. → Both corpora are mostly music-led; loudness is still a register choice. See [[earshot-reconciliation]].
+- [2026-10-19] Chromium render traps, from cinetic's forensics: `will-change` on a layer whose `blur()` animates flashes stale copies on random frames; CSS gradients band at 8 bits; a negative SVG `r`, `rx` or `width` is rejected and the old value sticks; `overflow: hidden` flattens `preserve-3d`. → Drop `will-change` where blur animates, ship dithered PNG gradients, clamp geometry at ≥ 0, paint 3D in z order yourself. See [[cinetic-reconciliation]].
+- [2026-10-19] Headless Chromium renders `blur()` in ~0.5 px steps (under ~0.75 px it is fully sharp) and snaps a text layer's vertical position to whole pixels. → Text that "pops sharp" or stair-steps at the end of a rise is the renderer, not the ease: clear entrance blur by ~60 % of the move and finish vertical text moves with a fast settle. See [[launch-video-motion]].
+- [2026-10-19] Agent exported a loop as a 30 fps GIF; it played 11 % fast, because GIF delays are whole hundredths of a second. → 25 or 50 fps for GIF. See [[launch-video-formats]].
+- [2026-10-19] Agent stripped every template device from a landing page and left it thin; in taste-skill's blind tests a richer page full of template devices beat a clean, thin one every time. → Removing tells is half the pass; enlarge what remains or close the gap, never leave a screen of nothing. See [[screenshot-critique]].
+- [2026-10-19] Agent hit-tested a toast stack against drawn positions; rapid presses on one spot dismissed one toast and then hit the gap the rest were sliding into. → Hit-test a press against where the element is heading; only the start of a drag uses the drawn position. See [[animated-hit-testing]].
+- [2026-10-19] Agent clamped a window's stored rectangle into the viewport every frame; a phone turned sideways and back left every window squashed. → Store what the user placed; derive the fitted rectangle each frame without storing it. See [[frame-rate-independence]].
+- [2026-10-25] Agent ran a whole-codebase review on a request that named a pull request and returned thirty findings, most older than the branch. → A diff gets a change-scoped review: status every finding Introduced, Regression or Pre-existing by cause, and list at most three pre-existing ones. See [[change-scoped-review]].
+- [2026-10-25] Agent mounted `<div role="status">` with the message already inside it; the toast showed and the screen reader said nothing. → Keep the region in the DOM empty from the start, then set its text. See [[screen-reader-announcements]].
+- [2026-10-25] Agent rated a 36px desktop icon button a top-severity accessibility finding. → The AA criterion is 24×24 (2.5.8); 44px and 40px are recommendations, never the top severity. See [[wcag-thresholds]].
+- [2026-10-25] Agent swapped `margin-left` for `margin-inline-start` on a floating button that also used `env(safe-area-inset-left)`; in RTL it sat inside the notch. → Safe-area insets are physical: keep `left` / `right` with the matching inset and add a `[dir="rtl"]` override. See [[logical-properties-rtl]].
+- [2026-10-30] Agent trusted a generated track's 172 BPM label and built the beat grid on it; a 0.15 % tempo error put the last hits of a 50 s film about 70 ms late. → Measure the track, give the tracker the intended tempo, fit only the stretch the film uses. See [[film-as-function-of-time]].
+- [2026-10-30] Agent encoded a 4K master at a slower x264 preset without `-level`; it came out Level 6.0, played in ffmpeg and failed in QuickTime and on phones. → `-level 5.2` at 4K (4.2 at 1080p), and decode the file on the hardware decoder before handover. See [[film-as-function-of-time]].
+- [2026-10-30] Agent applied scenario-kinetic-film's ≤ 40 % still gate to a product-camera film. → Its gates belong to the beat-cut register and count stillness differently; judge a film inside its own row. See [[scenario-kinetic-reconciliation]].
+- [2026-10-30] This graph labelled `cubic-bezier(0.34, 1.56, 0.64, 1)` "the Apple feel" and stiffness 380 / damping 30 "Apple-style". The curve overshoots and anticipates nothing; 380/30 is a drawer spring; Apple's default is critically damped. → Overshoot only after a gesture with momentum. See [[easing-curves]] and [[spring-animations]].
+- [2026-10-30] Agent deleted a `motion.div` fade and left `initial={{ opacity: 0 }}` behind; the hero stayed invisible. → Remove the start state with the animation, and anything that waited for it. See [[animation-removal-hazards]].
+- [2026-10-30] Agent snapped a flicked card to the target nearest the release point; fast flicks bounced back. → Project where the flick would rest, snap to the target nearest that point, and hand the spring the release velocity. See [[momentum-projection]].
+- [2026-10-30] Agent declared `color-scheme: light dark` on a light-only app; phones in dark mode rendered dark native inputs on white cards. → Declare only the schemes that were designed. See [[contrast-and-color-scheme]].
+- [2026-10-30] This graph waited 800ms before showing any loading state; users clicked again into the silence. → Delay ~150ms against flashes, show something by 400ms, a skeleton for content, a spinner only inside a control. See [[empty-loading-states]].
+- [2026-10-30] Agent rendered a dev panel behind `NODE_ENV === "development"` with a static import; the panel's code shipped to production anyway. → Dev-only tools mount through a dynamic import. See [[leftovers-and-leaks]].
+- [2026-11-01] Agent built a landing-page hero demo by shrinking the whole dashboard into a card with even margins and real text in every row; it read as a pasted screenshot. → Crop 10–40% of the hero off stage, keep 3–7 real strings and bars for the rest, frame before building. See [[product-shot-framing]] and [[faux-ui-restraint]].
+- [2026-11-01] Agent checked an animated demo with one settled screenshot and shipped a pill that hopped 4px mid-entrance and a loop reset that rewound data in view. → Film the whole loop as a contact sheet and step each beat at 40–80ms; data never rewinds in view. See [[demo-rehearsal]] and [[demo-story-and-loops]].
+- [2026-11-01] Agent shipped a 14 s autoplaying hero loop with only a Replay button. → Anything that moves for more than 5 s needs a visible pause (WCAG 2.2.2); wrap the stage in `role="img"` with a label. See [[stageshow-reconciliation]].

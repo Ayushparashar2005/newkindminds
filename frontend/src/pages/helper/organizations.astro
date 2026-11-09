@@ -1,0 +1,17 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { OrganizationDirectory } from '../../components/shared/OrganizationDirectory';
+---
+
+<Layout title="Organizations Management — KindMinds Helper" panel="helper">
+  <div class="space-y-4">
+    <div>
+      <h1 class="text-2xl font-black text-charcoal tracking-tight">Organizations & NGO Directory</h1>
+      <p class="text-sm text-charcoal-muted mt-1">
+        Manage registered humanitarian organizations, verify credentials, and coordinate inter-agency response.
+      </p>
+    </div>
+    <OrganizationDirectory panel="helper" client:load />
+  </div>
+</Layout>
+

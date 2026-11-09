@@ -1,0 +1,12 @@
+{
+  "name": "kindminds",
+  "version": "1.0.0",
+  "scripts": {
+    "build": "npm --prefix frontend run build",
+    "dev": "npm --prefix frontend run dev"
+  },
+  "dependencies": {
+    "@neon/config": "^1.10.1",
+    "@neon/env": "^1.6.9"
+  }
+}

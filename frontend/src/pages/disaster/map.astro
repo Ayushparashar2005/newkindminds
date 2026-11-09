@@ -1,0 +1,17 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { KindMindsMap } from '../../components/maps/KindMindsMap';
+---
+
+<Layout title="Geospatial Disaster Resource Map — KindMinds" panel="needer">
+  <div class="space-y-4">
+    <div>
+      <h1 class="text-2xl font-black text-charcoal tracking-tight">Geospatial Disaster Resource Map</h1>
+      <p class="text-sm text-charcoal-muted mt-1">
+        Interactive map of emergency medical staging, shelters, drinking water stations, and logistics depots.
+      </p>
+    </div>
+    <!-- client:only="react" is required for Leaflet — it needs the browser DOM -->
+    <KindMindsMap panel="needer" client:only="react" />
+  </div>
+</Layout>

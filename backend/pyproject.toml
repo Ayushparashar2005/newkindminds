@@ -1,0 +1,20 @@
+[project]
+name = "kindminds-backend"
+version = "1.0.0"
+description = "KindMinds AI-Powered Mental Health Support & Humanitarian Disaster Response Platform"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "fastapi>=0.110.0",
+    "uvicorn[standard]>=0.28.0",
+    "sqlalchemy>=2.0.28",
+    "pydantic>=2.6.4",
+    "pydantic-settings>=2.2.1",
+    "groq>=0.4.2",
+    "python-multipart>=0.0.9",
+    "cryptography>=42.0.5"
+]
+
+[tool.fastapi]
+entrypoint = "app.main:app"
+
