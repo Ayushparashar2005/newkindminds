@@ -9,10 +9,12 @@ import type {
   MentalHealthJournalEntry
 } from '../types';
 
-// Use PUBLIC_API_URL env var if set, fallback to localhost for dev
-const API_BASE_URL =
+// Use PUBLIC_API_URL env var if set, fallback to localhost for dev.
+// Trailing slashes are stripped so ".../api/" and ".../api" both build valid URLs.
+const API_BASE_URL = (
   (typeof import.meta !== 'undefined' && import.meta.env?.PUBLIC_API_URL) ||
-  'http://localhost:8001/api';
+  'http://localhost:8001/api'
+).replace(/\/+$/, '');
 
 async function fetchJSON<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
   const url = `${API_BASE_URL}${endpoint}`;

@@ -66,6 +66,18 @@ npx pnpm@10 run dev
 
 ---
 
+## ☁️ Deployment
+
+The frontend is static and the backend is Python, so they deploy to different places:
+
+- **Frontend → Cloudflare Pages** (free): 20 static pages, built with `PUBLIC_API_URL` pointing at the API.
+- **Backend → boat sandbox** (per-second VM, `$20/month` minimum): FastAPI on port 8001 behind a stable `on.boat.dev` HTTPS URL, SQLite persisted in the sandbox snapshot.
+
+Full runbook, cost limits and troubleshooting: **[docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)**.
+One-command backend deploy: `./deploy/boat/deploy-api.sh`.
+
+---
+
 ## 🗺️ Key Routes
 
 | Route | Description |

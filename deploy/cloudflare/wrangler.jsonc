@@ -1,0 +1,22 @@
+{
+  // Optional: custom-domain proxy in front of the boat API.
+  //   npx wrangler deploy --config deploy/cloudflare/wrangler.jsonc
+  // 1. Replace UPSTREAM with the URL printed by `boat host <id> 8001 --public`.
+  // 2. Replace the route pattern with a hostname on a zone in your Cloudflare account.
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "kindminds-api-proxy",
+  "main": "api-proxy.js",
+  "compatibility_date": "2025-06-01",
+  "routes": [
+    {
+      "pattern": "api.kindminds.org",
+      "custom_domain": true
+    }
+  ],
+  "vars": {
+    "UPSTREAM": "https://CHANGE-ME-8001.on.boat.dev"
+  },
+  "observability": {
+    "enabled": true
+  }
+}
