@@ -14,7 +14,9 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 REPO_URL="${REPO_URL:-https://github.com/Ayushparashar2005/newkindminds.git}"
 TYPE="${TYPE:-small}"          # small = 2 vCPU / 4 GB at $0.018/h — the cheapest always-on size
 PORT="${PORT:-8001}"
-APP_DIR="${APP_DIR:-/root/kindminds}"
+# Empty means "the SSH user's home" — resolved after the sandbox exists. The sandbox
+# login user is normally `user`, not root, so /root is not writable.
+APP_DIR="${APP_DIR:-}"
 
 LOCAL=0
 if [ "${1:-}" = "--local" ]; then LOCAL=1; fi
@@ -24,11 +26,21 @@ if ! command -v boat >/dev/null 2>&1; then
   exit 1
 fi
 
+# The CLI prints friendly text in a terminal and JSON when piped. Pull a field out
+# of either, so this works from an agent, a script, or an interactive shell.
+json_field() {
+  sed -n 's/.*"'"$1"'":"\([^"]*\)".*/\1/p' | head -n1
+}
+
 ID="${SANDBOX:-}"
 CREATED=0
 if [ -z "$ID" ]; then
   echo "==> Creating a $TYPE sandbox"
-  ID="$(boat new --type "$TYPE" | tail -n1 | tr -d '[:space:]')"
+  OUT="$(boat new --type "$TYPE" --json 2>&1 || true)"
+  ID="$(printf '%s' "$OUT" | json_field id)"
+  if [ -z "$ID" ]; then
+    ID="$(printf '%s' "$OUT" | tail -n1 | tr -d '[:space:]')"
+  fi
   CREATED=1
 fi
 case "$ID" in
@@ -47,6 +59,17 @@ if [ "$CREATED" = "1" ]; then
   boat extend "$ID" --hours 2 >/dev/null 2>&1 || echo "    (auto-stop left unchanged)"
 fi
 
+# Resolve where we may actually write inside the sandbox.
+if [ -z "$APP_DIR" ]; then
+  REMOTE_HOME="$(boat ssh "$ID" -- 'printf %s "$HOME"' 2>/dev/null | tr -d '\r' | tail -n1 || true)"
+  case "$REMOTE_HOME" in
+    /*) ;;
+    *) REMOTE_HOME="/home/user" ;;
+  esac
+  APP_DIR="$REMOTE_HOME/kindminds"
+fi
+echo "==> App directory: $APP_DIR"
+
 if [ "$LOCAL" = "1" ]; then
   echo "==> Pushing the working tree"
   TARBALL="$(mktemp -t kindminds-api).tgz"
@@ -64,15 +87,21 @@ boat ssh "$ID" -- "APP_DIR='$APP_DIR' PORT='$PORT' $PREFIX bash -s" \
   < "$ROOT/deploy/boat/provision-api.sh"
 
 echo "==> Exposing port $PORT as a public HTTPS URL"
-boat host "$ID" "$PORT" --public --title "KindMinds API"
+HOST_OUT="$(boat host "$ID" "$PORT" --public --title "KindMinds API" --json 2>&1 || true)"
+URL="$(printf '%s' "$HOST_OUT" | json_field url)"
+if [ -z "$URL" ]; then
+  URL="$(printf '%s' "$HOST_OUT" | tail -n1 | tr -d '\r')"
+fi
+echo "API URL: $URL"
 
 cat <<EOF
 
 Sandbox id : $ID
-Health     : <API URL above>/api/health
+API URL    : $URL
+Health     : $URL/api/health
 
 Next steps:
-  Frontend build variable : PUBLIC_API_URL=<API URL above>/api
+  Frontend build variable : PUBLIC_API_URL=$URL/api
   Wake it after a stop    : ./deploy/boat/wake.sh $ID
   24/7 keep-awake (paid)  : boat extend $ID --no-auto-stop
   Follow the logs         : boat ssh $ID -- 'journalctl -u kindminds-api -f'

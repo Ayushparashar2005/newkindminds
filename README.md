@@ -73,8 +73,10 @@ The frontend is static and the backend is Python, so they deploy to different pl
 - **Frontend → Cloudflare Pages** (free): 20 static pages, built with `PUBLIC_API_URL` pointing at the API.
 - **Backend → boat sandbox** (per-second VM, `$20/month` minimum): FastAPI on port 8001 behind a stable `on.boat.dev` HTTPS URL, SQLite persisted in the sandbox snapshot.
 
+**Live:** <https://kindminds.pages.dev> · API <https://box-node-ae85e685a8e7b1b4-8001.on.boat.dev/api/health> (trial sandbox — auto-stops after 2 h, wake with `./deploy/boat/wake.sh bx_7jusua79`)
+
 Full runbook, cost limits and troubleshooting: **[docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)**.
-One-command backend deploy: `./deploy/boat/deploy-api.sh`.
+One-command deploys: `./deploy/boat/deploy-api.sh` and `./deploy/cloudflare/deploy-frontend.sh <api-origin>`.
 
 ---
 

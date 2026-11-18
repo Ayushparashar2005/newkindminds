@@ -26,7 +26,15 @@ echo "==> Resuming $ID"
 boat resume "$ID"
 
 echo "==> Publishing port $PORT"
-URL="$(boat host "$ID" "$PORT" --public | tail -n1 | tr -d '\r')"
+# Friendly text in a terminal, JSON when piped — handle both.
+json_field() {
+  sed -n 's/.*"'"$1"'":"\([^"]*\)".*/\1/p' | head -n1
+}
+OUT="$(boat host "$ID" "$PORT" --public --json 2>&1 || true)"
+URL="$(printf '%s' "$OUT" | json_field url)"
+if [ -z "$URL" ]; then
+  URL="$(printf '%s' "$OUT" | tail -n1 | tr -d '\r')"
+fi
 echo "API: $URL"
 
 echo "==> Waiting for the API to answer"

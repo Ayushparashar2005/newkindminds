@@ -20,6 +20,37 @@ VM that bills only while it is running.
 
 ---
 
+## Current deployment
+
+| Piece | Value |
+|---|---|
+| Frontend | **https://kindminds.pages.dev** — Pages project `kindminds`, account `d43fc4fc…` |
+| Backend | **https://box-node-ae85e685a8e7b1b4-8001.on.boat.dev** — sandbox `bx_7jusua79`, `small` |
+| Build variable | `PUBLIC_API_URL=https://box-node-ae85e685a8e7b1b4-8001.on.boat.dev/api` |
+| Plan | 7-day trial (ends 2026-11-25), 25 compute hours, auto-stop max 2 h |
+| AI | `GROQ_API_KEY` empty → SOP summaries and thought reframing return fallback text |
+
+Redeploy after a code change:
+
+```bash
+# backend (existing sandbox — does not create a new one)
+SANDBOX=bx_7jusua79 ./deploy/boat/deploy-api.sh
+
+# frontend, against whatever API URL the backend is on
+./deploy/cloudflare/deploy-frontend.sh https://box-node-ae85e685a8e7b1b4-8001.on.boat.dev
+```
+
+When the sandbox has auto-stopped (every 2 h on the trial):
+
+```bash
+./deploy/boat/wake.sh bx_7jusua79
+```
+
+The Pages URL does not change between deployments; each `wrangler pages deploy` also prints a
+per-deployment preview URL such as `https://997dea29.kindminds.pages.dev`.
+
+---
+
 ## Read this before you deploy: cost and limits
 
 **boat has no free tier.** It has a 7-day trial, then a **$20/month minimum**.
@@ -220,6 +251,8 @@ Server-Sent Events from the AI endpoints stream through this proxy unchanged.
 
 | Symptom | Cause / fix |
 |---|---|
+| `Permission denied` creating `/root/kindminds` | The sandbox login user is `user`, not root. The scripts resolve `$HOME` themselves; don't hardcode `/root`. |
+| A path 308-redirects to the same path with a trailing slash | Normal Cloudflare Pages pretty-URL behaviour, not an error |
 | API returns 502/503, or pages load with empty lists | Sandbox auto-stopped (2 h on the trial): `./deploy/boat/wake.sh <sandbox-id>` |
 | `fetch` fails only from the Pages site | URL is token-gated: re-run `boat host <id> 8001 --public` |
 | Empty lists, no console error | `PUBLIC_API_URL` missing at build time — rebuild Pages with it set |
