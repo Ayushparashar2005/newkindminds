@@ -7,7 +7,7 @@ interface QueryProviderProps {
 }
 
 /**
- * QueryProvider — wraps the app in TanStack Query's QueryClientProvider.
+ * QueryProvider wraps the app in TanStack Query's QueryClientProvider.
  * Must be mounted with client:load in Astro layouts so it only runs client-side.
  */
 export const QueryProvider: React.FC<QueryProviderProps> = ({ children }) => {

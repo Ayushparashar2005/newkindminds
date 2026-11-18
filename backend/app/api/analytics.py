@@ -72,33 +72,65 @@ def get_regional_distribution(db: Session = Depends(get_db)):
                 "region": loc,
                 "total_requests": 0,
                 "fulfilled_requests": 0,
+                "awaiting_requests": 0,
+                "in_progress_requests": 0,
+                "unable_requests": 0,
+                "cancelled_requests": 0,
                 "categories": {}
             }
-        regional_map[loc]["total_requests"] += 1
+        row = regional_map[loc]
+        row["total_requests"] += 1
         if r.status == "fulfilled":
-            regional_map[loc]["fulfilled_requests"] += 1
+            row["fulfilled_requests"] += 1
+        elif r.status == "submitted":
+            row["awaiting_requests"] += 1
+        elif r.status in ("assigned", "in_progress"):
+            row["in_progress_requests"] += 1
+        elif r.status == "unable_to_fulfill":
+            row["unable_requests"] += 1
+        elif r.status == "cancelled":
+            row["cancelled_requests"] += 1
         cat = r.assistance_category
-        regional_map[loc]["categories"][cat] = regional_map[loc]["categories"].get(cat, 0) + 1
+        row["categories"][cat] = row["categories"].get(cat, 0) + 1
 
-    return list(regional_map.values())
+    for row in regional_map.values():
+        if row["unable_requests"]:
+            row["coverage_status"] = "gap"
+        elif row["awaiting_requests"]:
+            row["coverage_status"] = "awaiting_response"
+        elif row["in_progress_requests"]:
+            row["coverage_status"] = "responders_assigned"
+        elif row["fulfilled_requests"]:
+            row["coverage_status"] = "covered"
+        else:
+            row["coverage_status"] = "closed"
+
+    # Sectors needing attention first
+    order = {"gap": 0, "awaiting_response": 1, "responders_assigned": 2, "covered": 3, "closed": 4}
+    return sorted(regional_map.values(), key=lambda r: (order[r["coverage_status"]], -r["total_requests"]))
+
 
 @router.get("/resource-flow")
 def get_resource_flow_data(db: Session = Depends(get_db)):
     """
     Aggregates resource supply levels by category.
     """
-    categories = ["medical", "shelter", "supplies", "food", "water", "equipment"]
+    categories = [c for (c,) in db.query(HumanitarianResource.category).distinct().order_by(HumanitarianResource.category).all()]
     breakdown = []
     for cat in categories:
-        count = db.query(func.count(HumanitarianResource.id)).filter(HumanitarianResource.category == cat).scalar() or 0
-        available = db.query(func.count(HumanitarianResource.id)).filter(
-            HumanitarianResource.category == cat,
-            HumanitarianResource.operational_status == "available"
-        ).scalar() or 0
+        rows = db.query(HumanitarianResource.operational_status, func.count(HumanitarianResource.id)).filter(
+            HumanitarianResource.category == cat
+        ).group_by(HumanitarianResource.operational_status).all()
+        by_status = {status: n for status, n in rows}
+        count = sum(by_status.values())
+        available = by_status.get("available", 0)
+        limited = by_status.get("limited", 0)
         breakdown.append({
-            "category": cat.capitalize(),
+            "category": cat.replace("_", " ").capitalize(),
             "total_facilities": count,
             "available_facilities": available,
+            "limited_facilities": limited,
+            "unavailable_facilities": count - available - limited,
             "limited_or_out": count - available
         })
     return breakdown

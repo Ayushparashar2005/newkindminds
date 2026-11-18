@@ -15,57 +15,40 @@ from backend.app.ai.groq_client import groq_service
 
 router = APIRouter(prefix="/mental-health", tags=["Mental Health Support"])
 
-VERIFIED_HELPLINES = [
-    {
+def _line(name, number, hours, languages, kind, source):
+    return {
         "country": "India",
-        "service_name": "KIRAN National Mental Health Helpline",
-        "phone_or_code": "1800-599-0019",
-        "available_hours": "24/7",
-        "languages": ["Hindi", "English", "11 Regional Languages"],
-        "service_type": "mental_health",
-        "verified_source": "Ministry of Social Justice and Empowerment, Govt. of India",
-        "last_verified_at": "2026-01-15T00:00:00Z"
-    },
-    {
-        "country": "India",
-        "service_name": "Tele-MANAS Comprehensive Mental Health Helpline",
-        "phone_or_code": "14416 / 1800-891-4416",
-        "available_hours": "24/7",
-        "languages": ["Multilingual across states"],
-        "service_type": "mental_health",
-        "verified_source": "Ministry of Health and Family Welfare, Govt. of India / NIMHANS",
-        "last_verified_at": "2026-02-01T00:00:00Z"
-    },
-    {
-        "country": "India",
-        "service_name": "National Emergency Response Support System (ERSS)",
-        "phone_or_code": "112",
-        "available_hours": "24/7",
-        "languages": ["National & State Languages"],
-        "service_type": "emergency",
-        "verified_source": "Ministry of Home Affairs, Govt. of India",
-        "last_verified_at": "2026-01-01T00:00:00Z"
-    },
-    {
-        "country": "International / USA",
-        "service_name": "Suicide & Crisis Lifeline",
-        "phone_or_code": "988",
-        "available_hours": "24/7",
-        "languages": ["English", "Spanish", "150+ via interpretation"],
-        "service_type": "mental_health",
-        "verified_source": "SAMHSA (Substance Abuse and Mental Health Services Administration)",
-        "last_verified_at": "2026-01-10T00:00:00Z"
-    },
-    {
-        "country": "International / USA",
-        "service_name": "Disaster Distress Helpline",
-        "phone_or_code": "1-800-985-5990",
-        "available_hours": "24/7",
-        "languages": ["Multilingual"],
-        "service_type": "disaster",
-        "verified_source": "SAMHSA Disaster Behavioral Health",
-        "last_verified_at": "2026-01-10T00:00:00Z"
+        "service_name": name,
+        "phone_or_code": number,
+        "available_hours": hours,
+        "languages": languages,
+        "service_type": kind,
+        "verified_source": source,
+        "last_verified_at": "2026-06-01T00:00:00Z",
     }
+
+
+VERIFIED_HELPLINES = [
+    _line("Emergency Response Support System (ERSS)", "112", "24x7",
+          ["Hindi", "English", "State languages"], "emergency", "Ministry of Home Affairs, Govt. of India"),
+    _line("Tele-MANAS, National Tele Mental Health Programme", "14416 / 1-800-891-4416", "24x7, free",
+          ["20+ Indian languages"], "mental_health", "Ministry of Health & Family Welfare / NIMHANS"),
+    _line("Ambulance (National Ambulance Service)", "108", "24x7",
+          ["State languages"], "emergency", "National Health Mission, state health departments"),
+    _line("NDMA Disaster Management Helpline", "1078", "24x7",
+          ["Hindi", "English"], "disaster", "National Disaster Management Authority, Govt. of India"),
+    _line("State Emergency Operation Centre / District Control Room", "1070 / 1077", "24x7",
+          ["State languages"], "disaster", "State Disaster Management Authorities"),
+    _line("Women Helpline", "181", "24x7",
+          ["State languages"], "women_child", "Ministry of Women & Child Development, Govt. of India"),
+    _line("Childline (Child Helpline)", "1098", "24x7, free",
+          ["State languages"], "women_child", "Ministry of Women & Child Development, Govt. of India"),
+    _line("Elder Line, National Helpline for Senior Citizens", "14567", "8 AM to 8 PM",
+          ["Hindi", "English", "State languages"], "mental_health", "Ministry of Social Justice & Empowerment, Govt. of India"),
+    _line("Vandrevala Foundation Mental Health Helpline", "+91 9999 666 555", "24x7, free",
+          ["Hindi", "English", "Other languages"], "mental_health", "Vandrevala Foundation (NGO)"),
+    _line("iCall Psychosocial Helpline", "9152987821", "Mon to Sat, 10 AM to 8 PM",
+          ["Hindi", "English", "Marathi", "Other languages"], "mental_health", "Tata Institute of Social Sciences (TISS), Mumbai"),
 ]
 
 @router.get("/helplines")

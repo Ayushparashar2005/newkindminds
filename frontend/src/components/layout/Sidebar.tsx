@@ -25,42 +25,41 @@ interface SidebarProps {
 export const Sidebar: React.FC<SidebarProps> = ({ panel, currentPath }) => {
   const helperLinks = [
     { name: 'Dashboard', path: '/helper', icon: LayoutDashboard },
-    { name: 'Disaster Map', path: '/disaster/map', icon: Map },
-    { name: 'Assistance Requests', path: '/helper/requests', icon: ClipboardList },
-    { name: 'Resources & Stock', path: '/helper/resources', icon: Boxes },
-    { name: 'Search Groups', path: '/helper/search-groups', icon: Users2 },
-    { name: 'Organizations', path: '/disaster/organizations', icon: Building2 },
-    { name: 'Preparedness & SOPs', path: '/helper/sop', icon: BookOpen },
-    { name: 'Relief Impact', path: '/disaster/impact', icon: BarChart3 },
+    { name: 'Relief map', path: '/disaster/map', icon: Map },
+    { name: 'Requests', path: '/helper/requests', icon: ClipboardList },
+    { name: 'Relief stock', path: '/helper/resources', icon: Boxes },
+    { name: 'Rescue teams', path: '/helper/search-groups', icon: Users2 },
+    { name: 'Organisations', path: '/disaster/organizations', icon: Building2 },
+    { name: 'Safety procedures', path: '/helper/sop', icon: BookOpen },
+    { name: 'Relief coverage', path: '/disaster/impact', icon: BarChart3 },
   ];
 
   const neederLinks = [
     { name: 'Dashboard', path: '/needer', icon: LayoutDashboard },
-    { name: 'Find Help', path: '/needer/find-help', icon: Search },
-    { name: 'Disaster Map', path: '/disaster/map', icon: Map },
-    { name: 'Request Assistance', path: '/needer/request', icon: PlusCircle },
-    { name: 'My Requests', path: '/needer/my-requests', icon: Clock },
-    { name: 'Emergency Guidance', path: '/needer/guidance', icon: Compass },
-    { name: 'Mental Health Support', path: '/needer/mental-health', icon: HeartHandshake },
+    { name: 'Find help nearby', path: '/needer/find-help', icon: Search },
+    { name: 'Relief map', path: '/disaster/map', icon: Map },
+    { name: 'Ask for help', path: '/needer/request', icon: PlusCircle },
+    { name: 'My requests', path: '/needer/my-requests', icon: Clock },
+    { name: 'Emergency guidance', path: '/needer/guidance', icon: Compass },
+    { name: 'Mental health', path: '/needer/mental-health', icon: HeartHandshake },
     { name: 'Preparedness', path: '/needer/preparedness', icon: CheckSquare },
   ];
 
   const links = panel === 'helper' ? helperLinks : neederLinks;
   const panelLabel = panel === 'helper' ? 'Helper Operations navigation' : 'Citizen & Community Needs navigation';
 
+
   return (
     <aside
-      className="w-full md:w-64 bg-surface-raised/80 border-r border-stone-200/80 p-4 shrink-0"
+      className="w-full md:w-60 border-r border-stone-200 px-3 py-4 shrink-0"
       aria-label={panel === 'helper' ? 'Helper panel sidebar' : 'Needer panel sidebar'}
     >
-      <div className="mb-4 px-2">
-        <span className="text-[11px] font-bold uppercase tracking-wider text-charcoal-muted" aria-hidden="true">
-          {panel === 'helper' ? 'Helper Operations' : 'Citizen & Community Needs'}
-        </span>
-      </div>
+      <p className="px-2.5 mb-2 text-[13px] text-charcoal-muted" aria-hidden="true">
+        {panel === 'helper' ? 'Responder desk' : 'Get help'}
+      </p>
 
       <nav aria-label={panelLabel}>
-        <ul className="space-y-1" role="list">
+        <ul role="list" className="space-y-0.5">
           {links.map((link) => {
             const Icon = link.icon;
             const isActive = currentPath === link.path || (link.path !== `/${panel}` && currentPath.startsWith(link.path));
@@ -70,12 +69,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ panel, currentPath }) => {
                 <a
                   href={link.path}
                   aria-current={isActive ? 'page' : undefined}
-                  className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-semibold transition min-h-[44px] ${
+                  className={`flex items-center gap-2.5 px-2.5 h-9 rounded-lg text-sm font-medium transition-colors ${
                     isActive
-                      ? panel === 'helper'
-                        ? 'bg-dustyblue text-white shadow-sm'
-                        : 'bg-terracotta text-white shadow-sm'
-                      : 'text-charcoal hover:bg-surface hover:text-charcoal-dark'
+                      ? 'bg-surface-inset text-charcoal'
+                      : 'text-charcoal-muted hover:text-charcoal hover:bg-surface-raised'
                   }`}
                 >
                   <Icon className="w-4 h-4 shrink-0" aria-hidden="true" />
@@ -87,34 +84,27 @@ export const Sidebar: React.FC<SidebarProps> = ({ panel, currentPath }) => {
         </ul>
       </nav>
 
-      {/* Helper Verification Status Badge */}
       {panel === 'helper' && (
-        <div className="mt-8 p-3 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-900 text-xs neu-flat" role="status" aria-label="Verified Responder Desk — active">
-          <p className="font-bold flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-emerald-600 animate-pulse" aria-hidden="true"></span>
-            Verified Responder Desk
+        <div className="mx-2.5 mt-6 pt-4 border-t border-stone-200 text-[13px] text-charcoal-muted" role="status">
+          <p className="font-bold text-charcoal flex items-center gap-1.5">
+            <span className="w-2 h-2 rounded-full bg-sage" aria-hidden="true"></span>
+            Responder access
           </p>
-          <p className="text-[11px] text-emerald-700 mt-1">
-            Access to live requests, warehouse allocation, and field coordination.
-          </p>
+          <p className="mt-1">You can see live requests, manage stock and coordinate field teams.</p>
         </div>
       )}
 
-      {/* Emergency Helpline shortcut */}
       {panel === 'needer' && (
-        <div className="mt-8 p-3 rounded-lg bg-surface border border-stone-300 text-charcoal text-xs neu-flat">
-          <p className="font-bold text-terracotta flex items-center gap-1.5">
+        <div className="mx-1 mt-6 p-3 rounded-xl border border-stone-200 bg-surface-card text-[13px]">
+          <p className="font-bold text-emergency flex items-center gap-1.5">
             <Phone className="w-3.5 h-3.5" aria-hidden="true" />
-            Need urgent help?
+            In danger right now?
           </p>
-          <p className="text-[11px] text-charcoal-muted mt-1">
-            National Helplines available 24/7.
+          <p className="text-charcoal mt-1">
+            Call <a href="tel:112" className="font-bold underline">112</a>. For mental-health support, Tele-MANAS <a href="tel:14416" className="font-bold underline">14416</a>.
           </p>
-          <a
-            href="/needer/mental-health"
-            className="mt-2 inline-block text-[11px] font-bold text-dustyblue hover:underline focus-visible:underline"
-          >
-            View Emergency Numbers →
+          <a href="/needer/mental-health" className="mt-2 inline-block font-semibold text-charcoal underline underline-offset-2">
+            All helpline numbers
           </a>
         </div>
       )}

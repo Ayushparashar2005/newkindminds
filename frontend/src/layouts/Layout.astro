@@ -10,7 +10,7 @@ interface Props {
 }
 
 const {
-  title = "KindMinds — Humanitarian & Mental Health Response Platform",
+  title = "KindMinds",
   panel = "needer",
   showSidebar = true
 } = Astro.props;
@@ -27,14 +27,14 @@ const currentPath = Astro.url.pathname;
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
     <title>{title}</title>
   </head>
   <body class="bg-surface text-charcoal min-h-screen flex flex-col font-sans">
     <!-- A11y Skip Link (WCAG 2.2 Requirement for Screen Readers & Keyboard Navigation) -->
     <a
       href="#main-content"
-      class="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[100] focus:px-4 focus:py-2 focus:bg-charcoal focus:text-white focus:rounded focus:ring-2 focus:ring-terracotta focus:outline-none text-xs font-bold"
+      class="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[100] focus:px-4 focus:py-2 focus:bg-charcoal focus:text-white focus:rounded focus:ring-2 focus:ring-white focus:outline-none text-xs font-bold"
     >
       Skip to main content
     </a>
@@ -51,13 +51,13 @@ const currentPath = Astro.url.pathname;
       </main>
     </div>
 
-    <footer class="mt-auto border-t border-stone-200/80 bg-surface-raised py-6 px-4 text-center text-xs text-charcoal-muted">
-      <div class="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2">
+    <footer class="mt-auto border-t border-stone-200 bg-surface py-5 px-4 text-xs text-charcoal-muted">
+      <div class="max-w-7xl mx-auto flex flex-col sm:flex-row sm:items-center justify-between gap-2">
         <p>
-          <strong>KindMinds Platform</strong> — Humanitarian Bauhaus Architecture • Powered by Neon PostGIS, FastAPI, and Groq AI
+          <strong class="text-charcoal">KindMinds</strong> is a coordination platform, not an emergency service.
         </p>
-        <p class="text-[11px]">
-          Life Safety Notice: For immediate life-threatening crises, dial <strong>112 / 911</strong>.
+        <p>
+          In danger right now? Call <a href="tel:112" class="font-bold text-emergency underline underline-offset-2">112</a>. Ambulance <a href="tel:108" class="font-bold text-charcoal underline underline-offset-2">108</a>.
         </p>
       </div>
     </footer>

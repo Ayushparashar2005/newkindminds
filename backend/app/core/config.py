@@ -7,20 +7,11 @@ class Settings(BaseSettings):
     VERSION: str = "1.0.0"
     API_V1_STR: str = "/api"
     
-    # Database (Neon Lakebase Postgres)
+    # Database (SQLite by default; set DATABASE_URL for PostgreSQL)
     DATABASE_URL: str = os.getenv(
         "DATABASE_URL",
         "sqlite:///./kindminds_dev.db"
     )
-    DATABASE_URL_UNPOOLED: str = os.getenv("DATABASE_URL_UNPOOLED", "")
-    NEON_BRANCH: str = os.getenv("NEON_BRANCH", "production")
-
-    # Neon Services
-    NEON_FUNCTION_HELLO_BASE_URL: str = os.getenv("NEON_FUNCTION_HELLO_BASE_URL", "")
-    NEON_AUTH_BASE_URL: str = os.getenv("NEON_AUTH_BASE_URL", "")
-    NEON_AUTH_JWKS_URL: str = os.getenv("NEON_AUTH_JWKS_URL", "")
-    NEON_REALTIME_URL: str = os.getenv("NEON_REALTIME_URL", "")
-    NEON_REALTIME_SECRET: str = os.getenv("NEON_REALTIME_SECRET", "")
     
     # AI (Groq)
     GROQ_API_KEY: str = os.getenv("GROQ_API_KEY", "")

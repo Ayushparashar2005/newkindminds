@@ -18,6 +18,7 @@ const HelperRequestsInner: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [panelError, setPanelError] = useState<string | null>(null);
   const [activeRequest, setActiveRequest] = useState<AssistanceRequest | null>(null);
   const [assigneeName, setAssigneeName] = useState('');
   const [selectedOrgId, setSelectedOrgId] = useState('');
@@ -70,9 +71,10 @@ const HelperRequestsInner: React.FC = () => {
       qc.invalidateQueries({ queryKey: ['analytics', 'overview'] });
       setActiveRequest(null);
       setResolutionNotes('');
+      setPanelError(null);
     },
     onError: () => {
-      alert('Failed to update status');
+      setPanelError('Failed to update the request status. Please try again.');
     }
   });
 
@@ -84,9 +86,10 @@ const HelperRequestsInner: React.FC = () => {
       qc.invalidateQueries({ queryKey: ['analytics', 'overview'] });
       setActiveRequest(null);
       setAssigneeName('');
+      setPanelError(null);
     },
     onError: () => {
-      alert('Failed to assign responder');
+      setPanelError('Failed to assign the responder. Please try again.');
     }
   });
 
@@ -104,9 +107,10 @@ const HelperRequestsInner: React.FC = () => {
   const handleAssign = () => {
     const orgId = selectedOrgId || (orgs[0]?.id ?? '');
     if (!activeRequest || !orgId || !assigneeName) {
-      alert('Please provide responder name and organization');
+      setPanelError('Enter the responder name and choose an organization before assigning.');
       return;
     }
+    setPanelError(null);
     assignResponderMutation.mutate({
       id: activeRequest.id,
       orgId,
@@ -137,9 +141,9 @@ const HelperRequestsInner: React.FC = () => {
 
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-black text-charcoal tracking-tight">Assistance Requests Dispatch & Triage</h1>
+          <h1 className="text-[28px] md:text-[32px]">Requests</h1>
           <p className="text-sm text-charcoal-muted mt-1">
-            Review, prioritize, and assign incoming requests from individuals affected by disasters.
+            Read each request, assign a team and update its status.
           </p>
         </div>
       </div>
@@ -154,7 +158,7 @@ const HelperRequestsInner: React.FC = () => {
             <input
               id={searchId}
               type="search"
-              placeholder="Search by keywords, location, or name..."
+              placeholder="Search by place, name or need"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-9 pr-4 py-2 bg-surface border border-stone-300 rounded-lg text-xs text-charcoal placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-dustyblue min-h-[44px]"
@@ -180,7 +184,7 @@ const HelperRequestsInner: React.FC = () => {
                   : 'bg-surface border border-stone-300 text-charcoal hover:bg-stone-100'
               }`}
             >
-              {cat.replace('_', ' ')}
+              {cat.replace(/_/g, ' ')}
             </button>
           ))}
         </div>
@@ -188,18 +192,18 @@ const HelperRequestsInner: React.FC = () => {
         {/* Status Pill Filters */}
         <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Filter by status">
           <span className="text-xs font-bold text-charcoal mr-1" aria-hidden="true">Status:</span>
-          {['all', 'submitted', 'in_progress', 'fulfilled', 'unable_to_fulfill'].map(st => (
+          {['all', 'submitted', 'assigned', 'in_progress', 'fulfilled', 'unable_to_fulfill', 'cancelled'].map(st => (
             <button
               key={st}
               onClick={() => setSelectedStatus(st)}
               aria-pressed={selectedStatus === st}
               className={`px-2.5 py-1 rounded text-xs capitalize font-semibold transition min-h-[36px] ${
                 selectedStatus === st
-                  ? 'bg-dustyblue text-white'
+                  ? 'bg-charcoal text-white'
                   : 'bg-surface border border-stone-300 text-charcoal hover:bg-stone-100'
               }`}
             >
-              {st.replace('_', ' ')}
+              {st.replace(/_/g, ' ')}
             </button>
           ))}
         </div>
@@ -219,7 +223,7 @@ const HelperRequestsInner: React.FC = () => {
           </div>
         ) : filteredRequests.length === 0 ? (
           <div className="p-12 text-center" role="status">
-            <p className="text-sm text-charcoal-muted">No assistance requests match the selected filters.</p>
+            <p className="text-sm text-charcoal-muted">No requests match these filters.</p>
             <button
               onClick={() => { setSelectedCategory('all'); setSelectedStatus('all'); setSearchQuery(''); }}
               className="mt-3 text-xs font-bold text-dustyblue hover:underline"
@@ -233,18 +237,19 @@ const HelperRequestsInner: React.FC = () => {
               <li key={req.id} className="py-4 first:pt-0 last:pb-0 flex flex-col md:flex-row md:items-start justify-between gap-4">
                 <div className="flex-1 min-w-0 space-y-1.5">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-stone-100 text-stone-800">
+                    <span className="px-2 py-0.5 rounded text-xs font-bold capitalize bg-stone-100 text-stone-800">
                       {req.assistance_category}
                     </span>
                     <StatusBadge status={req.status} />
                     <span className="text-xs font-black text-charcoal">{req.user_name || 'Community Member'}</span>
-                    <span className="text-[11px] text-charcoal-muted">· {new Date(req.created_at).toLocaleString()}</span>
+                    <span className="text-xs text-charcoal-muted">· {new Date(req.created_at).toLocaleString('en-IN')}</span>
                   </div>
 
                   <p className="text-xs text-charcoal font-medium leading-relaxed">{req.description}</p>
 
                   <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-charcoal-light pt-1">
                     <span>📍 Approximate: <strong>{req.approximate_location}</strong></span>
+                    {req.latitude != null && <span className="text-xs px-1.5 py-0.5 rounded bg-sky-50 text-sky-800 font-bold">Map pin</span>}
                     <span>📞 Contact: <strong>{req.preferred_contact_method}</strong> ({req.contact_value || 'On record'})</span>
                     {req.accessibility_needs && (
                       <span className="text-terracotta font-semibold">⚠️ Needs: {req.accessibility_needs}</span>
@@ -252,14 +257,14 @@ const HelperRequestsInner: React.FC = () => {
                   </div>
 
                   {req.assigned_organization_name && (
-                    <div className="p-2 bg-stone-100 rounded text-[11px] text-charcoal flex items-center gap-2 mt-2">
+                    <div className="p-2 bg-stone-100 rounded text-xs text-charcoal flex items-center gap-2 mt-2">
                       <UserCheck className="w-3.5 h-3.5 text-dustyblue" aria-hidden="true" />
                       <span>Assigned to <strong>{req.assigned_organization_name}</strong> {req.assigned_helper_name ? `(${req.assigned_helper_name})` : ''}</span>
                     </div>
                   )}
 
                   {req.notes && (
-                    <p className="text-[11px] text-stone-600 bg-surface-raised p-2 rounded border border-stone-200">
+                    <p className="text-xs text-stone-600 bg-surface-raised p-2 rounded border border-stone-200">
                       Note: {req.notes}
                     </p>
                   )}
@@ -269,10 +274,11 @@ const HelperRequestsInner: React.FC = () => {
                   <button
                     onClick={() => {
                       setActiveRequest(req);
+                      setPanelError(null);
                       setResolutionNotes(req.notes || '');
                     }}
-                    aria-label={`Open triage panel for ${req.user_name || 'Community Member'} — ${req.assistance_category} request`}
-                    className="px-3 py-1.5 bg-dustyblue text-white rounded text-xs font-semibold hover:bg-dustyblue-hover transition whitespace-nowrap shadow-sm min-h-[44px]"
+                    aria-label={`Open triage panel for ${req.user_name || 'Community Member'} (${req.assistance_category} request)`}
+                    className="px-3 py-1.5 bg-charcoal text-white rounded text-xs font-semibold hover:bg-charcoal-light transition whitespace-nowrap shadow-sm min-h-[44px]"
                   >
                     Action / Triage
                   </button>
@@ -286,7 +292,7 @@ const HelperRequestsInner: React.FC = () => {
       {/* Modal / Action Drawer for Triage */}
       {activeRequest && (
         <div
-          className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4"
+          className="fixed inset-0 z-50 km-backdrop flex items-center justify-center p-4"
           role="presentation"
           onClick={(e) => { if (e.target === e.currentTarget) setActiveRequest(null); }}
         >
@@ -295,7 +301,7 @@ const HelperRequestsInner: React.FC = () => {
             role="dialog"
             aria-modal="true"
             aria-labelledby="triage-dialog-title"
-            className="neu-card p-6 max-w-lg w-full bg-surface space-y-4 max-h-[90vh] overflow-y-auto"
+            className="km-dialog shadow-xl neu-card p-6 max-w-lg w-full bg-surface space-y-4 max-h-[90vh] overflow-y-auto"
           >
             <div className="flex items-center justify-between border-b border-stone-200 pb-3">
               <h2 id="triage-dialog-title" className="text-base font-black text-charcoal">
@@ -304,7 +310,7 @@ const HelperRequestsInner: React.FC = () => {
               <button
                 ref={closeButtonRef}
                 onClick={() => setActiveRequest(null)}
-                aria-label="Close triage panel"
+                aria-label="Close"
                 className="text-stone-400 hover:text-charcoal font-bold text-sm p-1.5 rounded hover:bg-stone-100 transition min-h-[44px] min-w-[44px] flex items-center justify-center"
               >
                 <X className="w-4 h-4" aria-hidden="true" />
@@ -313,21 +319,34 @@ const HelperRequestsInner: React.FC = () => {
 
             <div className="text-xs space-y-2">
               <div>
-                <span className="font-bold text-charcoal-muted uppercase text-[10px]">Requester Needs</span>
+                <span className="font-bold text-charcoal-muted capitalize text-xs">Requester Needs</span>
                 <p className="text-charcoal mt-0.5">{activeRequest.description}</p>
               </div>
               <div>
-                <span className="font-bold text-charcoal-muted uppercase text-[10px]">Location</span>
+                <span className="font-bold text-charcoal-muted capitalize text-xs">Location</span>
                 <p className="text-charcoal mt-0.5">{activeRequest.approximate_location}</p>
+                {activeRequest.latitude != null && activeRequest.longitude != null && (
+                  <p className="mt-1 text-xs text-charcoal-muted">
+                    📍 Pinned {activeRequest.latitude.toFixed(5)}, {activeRequest.longitude.toFixed(5)}.{' '}
+                    <a
+                      href={`https://www.google.com/maps/dir/?api=1&destination=${activeRequest.latitude},${activeRequest.longitude}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-dustyblue font-bold hover:underline"
+                    >
+                      Navigate
+                    </a>
+                  </p>
+                )}
               </div>
             </div>
 
             {/* Responder Assignment Section */}
             <fieldset className="p-3 bg-surface-raised rounded-lg border border-stone-200 space-y-2 text-xs">
-              <legend className="font-bold text-charcoal px-1">Assign Responder / Field Team</legend>
+              <legend className="font-bold text-charcoal px-1">Assign a team</legend>
               <div className="space-y-2">
                 <div>
-                  <label htmlFor={orgSelectId} className="text-[11px] text-charcoal-muted block mb-0.5">Assigned Organization</label>
+                  <label htmlFor={orgSelectId} className="text-xs text-charcoal-muted block mb-0.5">Organisation</label>
                   <select
                     id={orgSelectId}
                     value={selectedOrgId || (orgs[0]?.id ?? '')}
@@ -340,11 +359,11 @@ const HelperRequestsInner: React.FC = () => {
                   </select>
                 </div>
                 <div>
-                  <label htmlFor={assigneeId} className="text-[11px] text-charcoal-muted block mb-0.5">Responder / Team Leader Name</label>
+                  <label htmlFor={assigneeId} className="text-xs text-charcoal-muted block mb-0.5">Team lead</label>
                   <input
                     id={assigneeId}
                     type="text"
-                    placeholder="e.g., Dr. Ananya Sharma / Unit Alpha"
+                    placeholder="e.g. Dr. Ananya Sharma"
                     value={assigneeName}
                     onChange={(e) => setAssigneeName(e.target.value)}
                     className="w-full p-2 bg-surface border border-stone-300 rounded text-xs text-charcoal focus:outline-none focus:ring-2 focus:ring-dustyblue min-h-[44px]"
@@ -354,22 +373,26 @@ const HelperRequestsInner: React.FC = () => {
                   onClick={handleAssign}
                   disabled={assignResponderMutation.isPending}
                   aria-busy={assignResponderMutation.isPending}
-                  className="w-full py-2 bg-dustyblue text-white rounded text-xs font-semibold hover:bg-dustyblue-hover transition min-h-[44px] disabled:opacity-60"
+                  className="w-full py-2 bg-charcoal text-white rounded text-xs font-semibold hover:bg-charcoal-light transition min-h-[44px] disabled:opacity-60"
                 >
-                  {assignResponderMutation.isPending ? 'Assigning…' : 'Assign Responder'}
+                  {assignResponderMutation.isPending ? 'Assigning…' : 'Assign team'}
                 </button>
               </div>
             </fieldset>
 
+            {panelError && (
+              <p role="alert" className="text-xs text-red-800 bg-red-50 border border-red-200 rounded p-2">{panelError}</p>
+            )}
+
             {/* Resolution Notes Section */}
             <div className="space-y-1 text-xs">
-              <label htmlFor={notesId} className="font-bold text-charcoal block">Operational Notes / Triage Update</label>
+              <label htmlFor={notesId} className="font-bold text-charcoal block">Notes</label>
               <textarea
                 id={notesId}
                 rows={2}
                 value={resolutionNotes}
                 onChange={(e) => setResolutionNotes(e.target.value)}
-                placeholder="Log dispatch status, medical priority notes, or coordination updates..."
+                placeholder="What has been done, what is still needed"
                 className="w-full p-2 bg-surface border border-stone-300 rounded text-xs text-charcoal focus:outline-none focus:ring-2 focus:ring-dustyblue"
               />
             </div>

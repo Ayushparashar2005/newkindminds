@@ -1,4 +1,6 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { loadLocation, saveLocation, distanceKm, DEFAULT_LOCATION, type PickedLocation } from '../../lib/location';
+import { LocationPicker } from '../ui/LocationPicker';
 import { useQuery, QueryClientProvider } from '@tanstack/react-query';
 import { queryClient } from '../../lib/queryClient';
 import { api } from '../../lib/api';
@@ -19,7 +21,18 @@ import type { HumanitarianResource, SearchGroup } from '../../types';
 const FindHelpInner: React.FC = () => {
   const [activeCategory, setActiveCategory] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
-  const [locationInput, setLocationInput] = useState('');
+  const [loc, setLoc] = useState<PickedLocation>(DEFAULT_LOCATION);
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [radiusKm, setRadiusKm] = useState(0);
+
+  useEffect(() => {
+    loadLocation().then(setLoc);
+  }, []);
+
+  const km = (lat: number, lng: number) => distanceKm(loc.lat, loc.lng, lat, lng);
+  const withinRadius = (lat: number, lng: number) => radiusKm === 0 || km(lat, lng) <= radiusKm;
+  const directionsUrl = (lat: number, lng: number) =>
+    `https://www.google.com/maps/dir/?api=1&origin=${loc.lat},${loc.lng}&destination=${lat},${lng}`;
 
   const { data: resources = [], isLoading: rLoading } = useQuery({
     queryKey: ['resources'],
@@ -48,6 +61,7 @@ const FindHelpInner: React.FC = () => {
   const filteredResources = resources.filter(res => {
     if (res.visibility !== 'public') return false;
     if (activeCategory !== 'all' && res.category !== activeCategory) return false;
+    if (!withinRadius(res.latitude, res.longitude)) return false;
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
       return (
@@ -60,6 +74,7 @@ const FindHelpInner: React.FC = () => {
 
   const filteredSearchGroups = searchGroups.filter(g => {
     if (activeCategory !== 'all' && activeCategory !== 'search_group') return false;
+    if (!withinRadius(g.latitude, g.longitude)) return false;
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
       return (
@@ -71,23 +86,37 @@ const FindHelpInner: React.FC = () => {
     return true;
   });
 
+  filteredResources.sort((a, b) => km(a.latitude, a.longitude) - km(b.latitude, b.longitude));
+  filteredSearchGroups.sort((a, b) => km(a.latitude, a.longitude) - km(b.latitude, b.longitude));
+  const fmtKm = (lat: number, lng: number) => {
+    const d = km(lat, lng);
+    return d < 1 ? `${Math.round(d * 1000)} m away` : `~${Math.round(d).toLocaleString('en-IN')} km away`;
+  };
+
   return (
     <div className="space-y-6">
       <DemoBanner />
+      <LocationPicker
+        open={pickerOpen}
+        initial={loc}
+        title="Find help near…"
+        onClose={() => setPickerOpen(false)}
+        onSelect={(picked) => { setLoc(picked); saveLocation(picked); }}
+      />
       <AlertBanner />
 
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-black text-charcoal tracking-tight">Find Humanitarian Help & Relief Points</h1>
+          <h1 className="text-[28px] md:text-[32px]">Find help nearby</h1>
           <p className="text-sm text-charcoal-muted mt-1">
-            Verified emergency facilities, drinking water, food distribution, and medical care in your area.
+            Shelters, hospitals, drinking water and food points, nearest first.
           </p>
         </div>
         <a
           href="/needer/request"
           className="px-4 py-2 bg-terracotta text-white rounded-lg text-xs font-semibold hover:bg-terracotta-hover transition shadow-sm self-start sm:self-auto"
         >
-          Can't find what you need? Request Help &rarr;
+          Can't find it? Ask for help
         </a>
       </div>
 
@@ -98,7 +127,7 @@ const FindHelpInner: React.FC = () => {
             <Search className="w-4 h-4 text-charcoal-muted absolute left-3 top-2.5" />
             <input
               type="text"
-              placeholder="Search by facility name, neighborhood, or landmark..."
+              placeholder="Search by name, area or landmark"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-9 pr-4 py-2 bg-surface border border-stone-300 rounded-lg text-xs text-charcoal placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-dustyblue"
@@ -112,6 +141,36 @@ const FindHelpInner: React.FC = () => {
               <Navigation className="w-3.5 h-3.5 text-dustyblue" />
               View Map
             </a>
+          </div>
+        </div>
+
+        <div className="flex flex-col sm:flex-row sm:items-center gap-2 pt-2 border-t border-stone-200 text-xs">
+          <div className="flex items-center gap-1.5 flex-1 min-w-0">
+            <MapPin className="w-4 h-4 text-terracotta shrink-0" aria-hidden="true" />
+            <span className="text-charcoal-muted">Nearest first from:</span>
+            <strong className="text-charcoal truncate">{loc.label}</strong>
+          </div>
+          <div className="flex items-center gap-2">
+            <label htmlFor="fh-radius" className="sr-only">Distance</label>
+            <select
+              id="fh-radius"
+              value={radiusKm}
+              onChange={(e) => setRadiusKm(Number(e.target.value))}
+              className="px-2 py-2 bg-surface border border-stone-300 rounded-lg text-xs text-charcoal"
+            >
+              <option value={0}>Any distance</option>
+              <option value={10}>Within 10 km</option>
+              <option value={25}>Within 25 km</option>
+              <option value={100}>Within 100 km</option>
+              <option value={500}>Within 500 km</option>
+            </select>
+            <button
+              type="button"
+              onClick={() => setPickerOpen(true)}
+              className="px-3 py-2 bg-surface border border-stone-300 rounded-lg text-xs font-semibold text-charcoal hover:bg-stone-100 whitespace-nowrap"
+            >
+              Change location
+            </button>
           </div>
         </div>
 
@@ -135,7 +194,7 @@ const FindHelpInner: React.FC = () => {
 
       {/* Directory Results */}
       {loading ? (
-        <div className="p-12 text-center text-sm text-charcoal-muted">Loading verified relief resources...</div>
+        <div className="p-12 text-center text-sm text-charcoal-muted">Loading…</div>
       ) : (
         <div className="space-y-6">
           {/* Facilities */}
@@ -147,7 +206,7 @@ const FindHelpInner: React.FC = () => {
 
               {filteredResources.length === 0 ? (
                 <div className="p-8 text-center text-xs text-charcoal-muted bg-surface-raised rounded-lg border border-stone-200">
-                  No public facilities found matching your search. Try searching a broader area or submit a direct assistance request.
+                  Nothing matches that search. Try a bigger area, or ask for help and a team will look for you.
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -155,7 +214,7 @@ const FindHelpInner: React.FC = () => {
                     <div key={res.id} className="neu-card p-5 flex flex-col justify-between space-y-3">
                       <div>
                         <div className="flex items-center justify-between gap-2 mb-2">
-                          <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-stone-100 text-stone-800">
+                          <span className="px-2 py-0.5 rounded text-xs font-bold capitalize bg-stone-100 text-stone-800">
                             {res.category}
                           </span>
                           <StatusBadge status={res.operational_status} />
@@ -166,12 +225,18 @@ const FindHelpInner: React.FC = () => {
                           <MapPin className="w-3.5 h-3.5 text-terracotta shrink-0 mt-0.5" />
                           <span>{res.address_approximate}</span>
                         </p>
+                        <p className="text-xs text-charcoal-muted mt-1 flex items-center gap-2">
+                          <span className="font-semibold">{fmtKm(res.latitude, res.longitude)}</span>
+                          <a href={directionsUrl(res.latitude, res.longitude)} target="_blank" rel="noreferrer" className="text-dustyblue font-bold hover:underline inline-flex items-center gap-0.5">
+                            <Navigation className="w-3 h-3" aria-hidden="true" /> Directions
+                          </a>
+                        </p>
 
                         {/* Accessibility Badges */}
                         {res.accessibility_features && res.accessibility_features.length > 0 && (
                           <div className="mt-3 flex flex-wrap gap-1">
                             {res.accessibility_features.map((feat, idx) => (
-                              <span key={idx} className="text-[10px] px-2 py-0.5 bg-emerald-50 text-emerald-800 rounded font-medium">
+                              <span key={idx} className="text-xs px-2 py-0.5 bg-emerald-50 text-emerald-800 rounded font-medium">
                                 ♿ {feat}
                               </span>
                             ))}
@@ -181,7 +246,7 @@ const FindHelpInner: React.FC = () => {
                         {/* Public contact info */}
                         {res.contact_public && (
                           <div className="mt-3 p-2 bg-stone-100 rounded text-xs flex items-center justify-between">
-                            <span className="text-charcoal-muted text-[10px] uppercase font-bold">Help Desk:</span>
+                            <span className="text-charcoal-muted text-xs capitalize font-bold">Help Desk:</span>
                             <span className="font-bold text-charcoal">{res.contact_public}</span>
                           </div>
                         )}
@@ -193,7 +258,7 @@ const FindHelpInner: React.FC = () => {
                           href="/needer/request"
                           className="text-xs font-bold text-terracotta hover:underline"
                         >
-                          Request Here &rarr;
+                          Request Here
                         </a>
                       </div>
                     </div>
@@ -219,10 +284,11 @@ const FindHelpInner: React.FC = () => {
                       <StatusBadge status={g.operational_status} />
                     </div>
                     <p className="text-xs text-charcoal-light">📍 Region: {g.service_region}</p>
-                    <p className="text-[11px] text-charcoal-muted mt-0.5">Perimeter: {g.approximate_area}</p>
+                    <p className="text-xs text-charcoal-muted mt-0.5">Perimeter: {g.approximate_area}</p>
+                    <p className="text-xs text-charcoal-muted mt-0.5 font-semibold">Base {fmtKm(g.latitude, g.longitude)}</p>
                     <div className="mt-2 flex flex-wrap gap-1">
                       {g.capabilities.map((cap, idx) => (
-                        <span key={idx} className="text-[10px] px-2 py-0.5 bg-stone-100 rounded text-stone-700">
+                        <span key={idx} className="text-xs px-2 py-0.5 bg-stone-100 rounded text-stone-700">
                           {cap}
                         </span>
                       ))}

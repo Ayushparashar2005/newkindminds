@@ -1,8 +1,8 @@
 /**
- * KindMinds — Real Interactive Geospatial Disaster Map
+ * KindMinds relief map (Leaflet + OpenStreetMap).
  *
  * Uses Leaflet + React-Leaflet (v4 for React 18) with OpenStreetMap tiles.
- * Renders verified facilities from Neon PostgreSQL and live seismic events from USGS.
+ * Renders verified facilities from the KindMinds database and live India-region earthquakes (last 30 days) from USGS.
  *
  * Privacy note: Only public/visibility=public facilities are rendered.
  * Exact household coordinates are never exposed.
@@ -74,7 +74,7 @@ const CATEGORY_COLORS: Record<string, { color: string; symbol: string }> = {
   food:      { color: '#16A34A', symbol: '🍚' },
   warehouse: { color: '#78716C', symbol: '📦' },
   sar:       { color: '#7C3AED', symbol: '⛑' },
-  default:   { color: '#B5674D', symbol: '📍' },
+  default:   { color: '#142033', symbol: '📍' },
 };
 
 // Map controller: invalidates size and auto-fits bounds
@@ -110,20 +110,20 @@ interface KindMindsMapProps {
 
 const KindMindsMapInner: React.FC<KindMindsMapProps> = ({
   panel = 'needer',
-  defaultCenter = [21.64, 69.62],
-  defaultZoom = 8,
+  defaultCenter = [22.5, 79.0],
+  defaultZoom = 5,
 }) => {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [selectedItem, setSelectedItem] = useState<any>(null);
 
-  // 1. Neon Database: Verified Humanitarian Resources
+  // 1. Places from the KindMinds database
   const { data: resources = [], isLoading: rLoading, refetch: refetchRes } = useQuery({
     queryKey: ['resources'],
     queryFn: () => api.getResources(),
     staleTime: 60_000,
   });
 
-  // 2. Neon Database: Search & Rescue Groups
+  // 2. Database: Search & Rescue Groups
   const { data: searchGroups = [], isLoading: gLoading } = useQuery({
     queryKey: ['search-groups'],
     queryFn: () => api.getSearchGroups(),
@@ -159,12 +159,12 @@ const KindMindsMapInner: React.FC<KindMindsMapProps> = ({
   const allPositions: [number, number][] = [
     ...visibleResources.map(r => [r.latitude!, r.longitude!] as [number, number]),
     ...visibleGroups.map(g => [g.latitude!, g.longitude!] as [number, number]),
-    ...visibleQuakes.slice(0, 5).map(q => [q.latitude, q.longitude] as [number, number]),
+    ...visibleQuakes.slice(0, 5).map((q: any) => [q.latitude, q.longitude] as [number, number]),
   ];
 
   return (
     <div className="space-y-4">
-      <DemoBanner message="GEOSPATIAL DISASTER MAP — Real-time OpenStreetMap rendering verified facilities from Neon PostgreSQL and live seismic events from USGS. Exact household coordinates are strictly masked for civilian safety." />
+      <DemoBanner message="Shelters, hospitals and rescue teams from KindMinds, plus earthquakes in India from the last 30 days (USGS). Home addresses are never shown." />
 
       {/* Filter Bar */}
       <div className="neu-card p-4 flex flex-wrap items-center justify-between gap-3 text-xs">
@@ -197,15 +197,15 @@ const KindMindsMapInner: React.FC<KindMindsMapProps> = ({
         </div>
 
         <div className="flex items-center gap-3">
-          <div className="text-charcoal-muted text-[11px] font-medium hidden sm:block">
+          <div className="text-charcoal-muted text-xs font-medium hidden sm:block">
             <strong>{visibleResources.length}</strong> relief points · <strong>{visibleGroups.length}</strong> rescue units · <strong>{visibleQuakes.length}</strong> quakes
           </div>
           <button
             onClick={() => refetchRes()}
             className="p-2 rounded-lg border border-stone-300 hover:bg-surface-raised transition text-charcoal flex items-center gap-1 text-xs"
-            title="Refresh database records"
+            title="Refresh"
           >
-            <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
+            <RefreshCw className="w-3.5 h-3.5" />
             <span className="hidden sm:inline">Refresh</span>
           </button>
         </div>
@@ -216,9 +216,9 @@ const KindMindsMapInner: React.FC<KindMindsMapProps> = ({
         {/* Real Leaflet Map */}
         <div className="lg:col-span-2 neu-card overflow-hidden relative" style={{ height: '520px', minHeight: '520px' }}>
           {loading && (
-            <div className="absolute top-3 right-3 z-[1000] px-3 py-1 bg-surface/90 backdrop-blur-md rounded-md border border-stone-300 shadow text-[11px] font-bold text-charcoal flex items-center gap-2">
-              <RefreshCw className="w-3 h-3 animate-spin text-terracotta" />
-              Syncing live geospatial data…
+            <div className="absolute top-3 right-3 z-[1000] px-3 py-1 bg-surface/90 backdrop-blur-md rounded-md border border-stone-300 shadow text-xs font-bold text-charcoal flex items-center gap-2">
+              <RefreshCw className="w-3 h-3 text-terracotta" />
+              Loading map…
             </div>
           )}
 
@@ -237,7 +237,7 @@ const KindMindsMapInner: React.FC<KindMindsMapProps> = ({
             {/* Invalidate size & bounds controller */}
             <MapController positions={allPositions} />
 
-            {/* 1. Verified Public Resources (Neon PostgreSQL) */}
+            {/* 1. Verified Public Resources (the KindMinds database) */}
             {visibleResources.map(res => {
               const conf = CATEGORY_COLORS[res.category] || CATEGORY_COLORS.default;
               return (
@@ -265,9 +265,9 @@ const KindMindsMapInner: React.FC<KindMindsMapProps> = ({
                       {panel === 'needer' && (
                         <a
                           href="/needer/request"
-                          className="inline-block mt-2 px-3 py-1 bg-terracotta text-white rounded text-[11px] font-bold hover:bg-terracotta-hover transition"
+                          className="inline-block mt-2 px-3 py-1 bg-terracotta text-white rounded text-xs font-bold hover:bg-terracotta-hover transition"
                         >
-                          Request Assistance Here →
+                          Ask for help here
                         </a>
                       )}
                     </div>
@@ -276,7 +276,7 @@ const KindMindsMapInner: React.FC<KindMindsMapProps> = ({
               );
             })}
 
-            {/* 2. Search & Rescue Units (Neon PostgreSQL) */}
+            {/* 2. Search & Rescue Units (the KindMinds database) */}
             {visibleGroups.map(g => (
               <Marker
                 key={g.id}
@@ -289,7 +289,7 @@ const KindMindsMapInner: React.FC<KindMindsMapProps> = ({
                 <Popup>
                   <div className="text-xs space-y-1.5 min-w-[200px]">
                     <div className="font-extrabold text-sm text-charcoal">{g.name}</div>
-                    <div className="text-purple-800 font-bold">Search & Rescue Division</div>
+                    <div className="text-purple-800 font-bold">Rescue team</div>
                     <div className="text-stone-600">Sector: {g.approximate_area || g.service_region}</div>
                     {g.public_contact && (
                       <div className="text-stone-600 font-medium">📞 {g.public_contact}</div>
@@ -312,13 +312,18 @@ const KindMindsMapInner: React.FC<KindMindsMapProps> = ({
                 <Popup>
                   <div className="text-xs space-y-1.5 min-w-[220px]">
                     <div className="font-extrabold text-sm text-red-700 flex items-center gap-1.5">
-                      <Activity className="w-3.5 h-3.5 animate-pulse" />
+                      <Activity className="w-3.5 h-3.5" />
                       Magnitude {q.magnitude.toFixed(1)} Earthquake
                     </div>
                     <div className="font-bold text-charcoal">{q.place}</div>
                     <div className="text-stone-600">Depth: {q.depth_km} km</div>
+                    {q.time && (
+                      <div className="text-stone-600">
+                        {new Date(q.time).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', dateStyle: 'medium', timeStyle: 'short' })} IST
+                      </div>
+                    )}
                     {q.tsunami_alert && (
-                      <div className="p-1.5 bg-red-100 text-red-900 rounded font-bold text-[11px]">
+                      <div className="p-1.5 bg-red-100 text-red-900 rounded font-bold text-xs">
                         ⚠️ Tsunami Alert Issued for this epicenter
                       </div>
                     )}
@@ -326,9 +331,9 @@ const KindMindsMapInner: React.FC<KindMindsMapProps> = ({
                       href={q.url}
                       target="_blank"
                       rel="noreferrer"
-                      className="text-[11px] text-dustyblue font-semibold hover:underline inline-block mt-1"
+                      className="text-xs text-dustyblue font-semibold hover:underline inline-block mt-1"
                     >
-                      View USGS Event Details &rarr;
+                      Details on USGS
                     </a>
                   </div>
                 </Popup>
@@ -346,7 +351,7 @@ const KindMindsMapInner: React.FC<KindMindsMapProps> = ({
                 <>
                   <div>
                     <div className="flex items-center justify-between gap-2 mb-2">
-                      <span className="px-2.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-stone-100 text-stone-800">
+                      <span className="px-2.5 py-0.5 rounded text-xs font-bold capitalize bg-stone-100 text-stone-800">
                         {selectedItem.data.category}
                       </span>
                       <StatusBadge status={selectedItem.data.operational_status} />
@@ -360,20 +365,20 @@ const KindMindsMapInner: React.FC<KindMindsMapProps> = ({
 
                   <div className="p-3 bg-surface-inset rounded neu-inset text-xs space-y-1.5">
                     <div className="flex justify-between">
-                      <span className="text-charcoal-muted font-bold">Approx. Coordinates:</span>
+                      <span className="text-charcoal-muted font-bold">Approx. location:</span>
                       <span className="font-mono text-stone-700">
                         {selectedItem.data.latitude?.toFixed(4)}° N, {selectedItem.data.longitude?.toFixed(4)}° E
                       </span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-charcoal-muted font-bold">Source:</span>
-                      <span className="font-semibold text-stone-700">Verified Humanitarian Directory</span>
+                      <span className="font-semibold text-stone-700">Verified listing</span>
                     </div>
                   </div>
 
                   {selectedItem.data.contact_public && (
                     <div className="p-3 bg-stone-100 rounded text-xs">
-                      <span className="text-charcoal-muted text-[10px] uppercase font-bold block">Public Dispatch Phone</span>
+                      <span className="text-charcoal-muted text-xs capitalize font-bold block">Phone</span>
                       <span className="font-bold text-charcoal text-sm">{selectedItem.data.contact_public}</span>
                     </div>
                   )}
@@ -384,14 +389,14 @@ const KindMindsMapInner: React.FC<KindMindsMapProps> = ({
                         href="/needer/request"
                         className="w-full py-2.5 bg-terracotta text-white rounded text-xs font-bold hover:bg-terracotta-hover transition text-center block shadow-sm"
                       >
-                        Request Assistance Here &rarr;
+                        Ask for help here
                       </a>
                     ) : (
                       <a
                         href="/helper/resources"
-                        className="w-full py-2.5 bg-dustyblue text-white rounded text-xs font-bold hover:bg-dustyblue-hover transition text-center block shadow-sm"
+                        className="w-full py-2.5 bg-charcoal text-white rounded text-xs font-bold hover:bg-charcoal-light transition text-center block shadow-sm"
                       >
-                        Update Inventory / Status &rarr;
+                        Update stock
                       </a>
                     )}
                   </div>
@@ -402,7 +407,7 @@ const KindMindsMapInner: React.FC<KindMindsMapProps> = ({
               {selectedItem.type === 'sar' && (
                 <>
                   <div>
-                    <span className="px-2.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-purple-100 text-purple-900 block w-max mb-2">
+                    <span className="px-2.5 py-0.5 rounded text-xs font-bold capitalize bg-purple-100 text-purple-900 block w-max mb-2">
                       Search &amp; Rescue Base
                     </span>
                     <h3 className="font-black text-charcoal text-lg">{selectedItem.data.name}</h3>
@@ -414,7 +419,7 @@ const KindMindsMapInner: React.FC<KindMindsMapProps> = ({
                   </div>
                   {selectedItem.data.public_contact && (
                     <div className="p-3 bg-stone-100 rounded text-xs">
-                      <span className="text-charcoal-muted text-[10px] uppercase font-bold block">Emergency Channel</span>
+                      <span className="text-charcoal-muted text-xs capitalize font-bold block">Emergency Channel</span>
                       <span className="font-bold text-charcoal text-sm">{selectedItem.data.public_contact}</span>
                     </div>
                   )}
@@ -425,10 +430,10 @@ const KindMindsMapInner: React.FC<KindMindsMapProps> = ({
               {selectedItem.type === 'earthquake' && (
                 <>
                   <div>
-                    <span className="px-2.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-red-100 text-red-900 block w-max mb-2">
-                      Live USGS Seismic Alert
+                    <span className="px-2.5 py-0.5 rounded text-xs font-bold capitalize bg-red-100 text-red-900 block w-max mb-2">
+                      Earthquake (USGS)
                     </span>
-                    <h3 className="font-black text-charcoal text-lg">M{selectedItem.data.magnitude.toFixed(1)} — {selectedItem.data.place}</h3>
+                    <h3 className="font-black text-charcoal text-lg">M{selectedItem.data.magnitude.toFixed(1)} earthquake, {selectedItem.data.place}</h3>
                     <p className="text-xs text-charcoal-muted mt-1">Depth: {selectedItem.data.depth_km} km</p>
                   </div>
                   {selectedItem.data.tsunami_alert && (
@@ -442,7 +447,7 @@ const KindMindsMapInner: React.FC<KindMindsMapProps> = ({
                     rel="noreferrer"
                     className="w-full py-2.5 bg-charcoal text-white rounded text-xs font-bold hover:bg-black transition text-center block"
                   >
-                    View USGS ShakeMap &rarr;
+                    View USGS ShakeMap
                   </a>
                 </>
               )}
@@ -450,20 +455,20 @@ const KindMindsMapInner: React.FC<KindMindsMapProps> = ({
           ) : (
             <div className="flex flex-col items-center justify-center h-full text-center gap-3 p-8 text-charcoal-muted">
               <MapPin className="w-8 h-8 opacity-30 text-terracotta" />
-              <p className="text-xs font-medium">Click any pin or earthquake marker on the map to inspect live dispatch details, capacity, and phone contacts.</p>
+              <p className="text-xs font-medium">Click a pin to see its address, status and phone number.</p>
             </div>
           )}
         </div>
       </div>
 
       {/* Legend Bar */}
-      <div className="neu-card p-3 flex flex-wrap items-center gap-4 text-[11px]">
+      <div className="neu-card p-3 flex flex-wrap items-center gap-4 text-xs">
         {Object.entries({
-          medical: 'Medical Hospital',
+          medical: 'Hospital',
           shelter: 'Evacuation Shelter',
-          water: 'Clean Water Point',
+          water: 'Drinking water',
           food: 'Food Distribution',
-          sar: 'Search & Rescue',
+          sar: 'Rescue team',
         }).map(([cat, label]) => {
           const c = CATEGORY_COLORS[cat];
           return (
@@ -474,10 +479,10 @@ const KindMindsMapInner: React.FC<KindMindsMapProps> = ({
           );
         })}
         <span className="flex items-center gap-1.5 font-medium text-red-800">
-          <span className="w-3.5 h-3.5 rounded-full bg-red-600 animate-pulse shrink-0" />
+          <span className="w-3.5 h-3.5 rounded-full bg-red-600 shrink-0" />
           Live M4.0+ Earthquakes (USGS)
         </span>
-        <span className="ml-auto text-[10px] text-stone-500 font-semibold hidden md:inline">OpenStreetMap · Neon PostgreSQL · USGS Public APIs</span>
+        <span className="ml-auto text-xs text-stone-500 font-semibold hidden md:inline">Map data: OpenStreetMap. Earthquakes: USGS.</span>
       </div>
     </div>
   );

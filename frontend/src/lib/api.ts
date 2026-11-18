@@ -56,6 +56,15 @@ export const api = {
       body: JSON.stringify(data)
     });
   },
+  addInventoryItem: (
+    resourceId: string,
+    data: { item_name: string; quantity: number; unit: string; reserved_quantity?: number; inventory_status?: string }
+  ) =>
+    fetchJSON<any>(`/resources/${resourceId}/inventory`, { method: 'POST', body: JSON.stringify(data) }),
+  deleteInventoryItem: async (resourceId: string, itemId: string) => {
+    const res = await fetch(`${API_BASE_URL}/resources/${resourceId}/inventory/${itemId}`, { method: 'DELETE' });
+    if (!res.ok) throw new Error(`API error ${res.status}`);
+  },
   updateResource: (id: string, data: Partial<HumanitarianResource>) => {
     return fetchJSON<HumanitarianResource>(`/resources/${id}`, {
       method: 'PATCH',
@@ -66,6 +75,19 @@ export const api = {
   // Organizations
   getOrganizations: () => fetchJSON<Organization[]>('/organizations'),
   getOrganization: (id: string) => fetchJSON<Organization>(`/organizations/${id}`),
+  createOrganization: (data: {
+    name: string;
+    organization_type: string;
+    description: string;
+    assistance_categories: string[];
+    geographic_coverage: string[];
+    public_contact: string;
+    website?: string;
+  }) =>
+    fetchJSON<Organization>('/organizations', {
+      method: 'POST',
+      body: JSON.stringify({ ...data, operational_status: 'active', is_demo: false })
+    }),
 
   // Search Groups
   getSearchGroups: (params?: { disaster_id?: string; status?: string }) => {
@@ -171,15 +193,20 @@ export const api = {
     });
   },
 
-  // Neon Services Status
-  getNeonStatus: () => fetchJSON<any>('/neon/status'),
-
   // Public APIs (from public-apis repository)
   getLiveEarthquakes: (minMagnitude: number = 4.0) =>
     fetchJSON<any>(`/external/earthquakes?min_magnitude=${minMagnitude}`),
   getLiveWeather: (lat: number, lng: number) =>
     fetchJSON<any>(`/external/weather?lat=${lat}&lng=${lng}`),
   geocodeLocation: (query: string) =>
-    fetchJSON<any>(`/external/geocode?query=${encodeURIComponent(query)}`)
+    fetchJSON<any>(`/external/geocode?query=${encodeURIComponent(query)}`),
+  searchPlaces: (query: string) =>
+    fetchJSON<{ results: { label: string; display_name: string; latitude: number; longitude: number; type?: string }[] }>(
+      `/external/places?query=${encodeURIComponent(query)}`
+    ),
+  reverseGeocode: (lat: number, lng: number) =>
+    fetchJSON<{ label: string; display_name: string; latitude: number; longitude: number; country_code?: string; postcode?: string }>(
+      `/external/reverse-geocode?lat=${lat}&lng=${lng}`
+    )
 };
 

@@ -1,10 +1,13 @@
-import React, { useState, useId } from 'react';
+import React, { useEffect, useState, useId } from 'react';
 import { useQuery, useMutation, useQueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { queryClient } from '../../lib/queryClient';
 import { api } from '../../lib/api';
+import { addMyRequestId } from '../../lib/myRequests';
+import { loadLocation, saveLocation, type PickedLocation } from '../../lib/location';
+import { LocationPicker } from '../ui/LocationPicker';
 import { DemoBanner } from '../ui/DemoBanner';
 import { AlertBanner } from '../ui/AlertBanner';
-import { CheckCircle2, ArrowRight, ArrowLeft, AlertCircle } from 'lucide-react';
+import { CheckCircle2, ArrowRight, ArrowLeft, AlertCircle, MapPin } from 'lucide-react';
 import type { DisasterEvent } from '../../types';
 
 // Step progress indicator
@@ -28,7 +31,7 @@ const StepIndicator: React.FC<{ current: number; total: number }> = ({ current, 
         </React.Fragment>
       );
     })}
-    <span className="ml-2 text-xs font-bold text-charcoal-muted">
+    <span className="ml-2 num text-xs whitespace-nowrap text-charcoal-muted">
       Step {current} of {total}
     </span>
   </div>
@@ -36,7 +39,7 @@ const StepIndicator: React.FC<{ current: number; total: number }> = ({ current, 
 
 const STEPS = [
   { id: 1, title: 'Type of Need' },
-  { id: 2, title: 'Situation & Location' },
+  { id: 2, title: 'Where you are' },
   { id: 3, title: 'Contact & Review' },
 ];
 
@@ -51,11 +54,18 @@ const RequestAssistanceModalInner: React.FC = () => {
   const [category, setCategory] = useState('food');
   const [description, setDescription] = useState('');
   const [location, setLocation] = useState('');
+  const [pin, setPin] = useState<PickedLocation | null>(null);
+  const [savedLoc, setSavedLoc] = useState<PickedLocation | null>(null);
+  const [pickerOpen, setPickerOpen] = useState(false);
   const [contactMethod, setContactMethod] = useState<'phone' | 'sms' | 'in_person' | 'email' | 'app'>('phone');
   const [contactValue, setContactValue] = useState('');
   const [accessibilityNeeds, setAccessibilityNeeds] = useState('');
 
   // Stable IDs for form accessibility
+  useEffect(() => {
+    loadLocation().then(setSavedLoc);
+  }, []);
+
   const disasterSelectId = useId();
   const descriptionId = useId();
   const locationId = useId();
@@ -63,11 +73,12 @@ const RequestAssistanceModalInner: React.FC = () => {
   const contactValueId = useId();
   const liveRegionId = useId();
 
-  const { data: disasters = [] } = useQuery({
+  const { data: allDisasters = [] } = useQuery({
     queryKey: ['disasters'],
     queryFn: () => api.getDisasters(),
     staleTime: 60_000,
   });
+  const disasters = allDisasters.filter((d) => d.status === 'active');
 
   const submitMutation = useMutation({
     mutationFn: (data: {
@@ -75,11 +86,14 @@ const RequestAssistanceModalInner: React.FC = () => {
       assistance_category: string;
       description: string;
       approximate_location: string;
+      latitude?: number;
+      longitude?: number;
       preferred_contact_method: string;
       contact_value?: string;
       accessibility_needs?: string;
     }) => api.submitRequest(data),
-    onSuccess: () => {
+    onSuccess: (created) => {
+      if (created?.id) addMyRequestId(created.id);
       qc.invalidateQueries({ queryKey: ['assistance-requests'] });
       qc.invalidateQueries({ queryKey: ['analytics', 'overview'] });
       setSubmitError(null);
@@ -100,6 +114,8 @@ const RequestAssistanceModalInner: React.FC = () => {
       assistance_category: category,
       description,
       approximate_location: location,
+      latitude: pin?.lat,
+      longitude: pin?.lng,
       preferred_contact_method: contactMethod,
       contact_value: contactValue || undefined,
       accessibility_needs: accessibilityNeeds || undefined
@@ -107,12 +123,12 @@ const RequestAssistanceModalInner: React.FC = () => {
   };
 
   const categories = [
-    { id: 'food', label: 'Food & Nutrition', desc: 'Emergency food rations, clean cooked meals, baby formula' },
-    { id: 'water', label: 'Drinking Water', desc: 'Packaged potable water, filtration kits, bulk water tankers' },
-    { id: 'medical', label: 'Medical Assistance', desc: 'Trauma care, prescription medicines, oxygen, first aid' },
-    { id: 'shelter', label: 'Emergency Shelter', desc: 'Temporary housing, tarpaulins, evacuation center placement' },
-    { id: 'evacuation', label: 'Evacuation / Transport', desc: 'Rescue from flooded zone, mobility assistance, safe transit' },
-    { id: 'mental_health', label: 'Psychological First Aid', desc: 'Crisis counselling, emotional distress support, calming' },
+    { id: 'food', label: 'Food & Nutrition', desc: 'Dry rations, cooked meals, baby formula' },
+    { id: 'water', label: 'Drinking Water', desc: 'Bottled water, filters, a tanker' },
+    { id: 'medical', label: 'Medical Assistance', desc: 'Injuries, medicines, oxygen, first aid' },
+    { id: 'shelter', label: 'Emergency Shelter', desc: 'A place to stay, tarpaulins, a relief camp' },
+    { id: 'evacuation', label: 'Evacuation / Transport', desc: 'Getting out of a flooded area, help moving someone' },
+    { id: 'mental_health', label: 'Someone to talk to', desc: 'A counsellor, support when it is too much' },
   ];
 
   if (submitted) {
@@ -123,9 +139,9 @@ const RequestAssistanceModalInner: React.FC = () => {
           <div className="w-16 h-16 bg-emerald-100 text-emerald-800 rounded-full flex items-center justify-center mx-auto" aria-hidden="true">
             <CheckCircle2 className="w-10 h-10" />
           </div>
-          <h1 className="text-2xl font-black text-charcoal">Assistance Request Received</h1>
+          <h1 className="text-[28px] md:text-[32px]">Request sent</h1>
           <p className="text-sm text-charcoal-muted max-w-md mx-auto">
-            Your request has been logged into the verified humanitarian coordination dispatch. Responders in your sector have been alerted.
+            Responders can now see it on their desk. If anyone is in danger, call 112 as well.
           </p>
 
           <div className="p-4 bg-surface-raised rounded-lg border border-stone-200 text-xs text-left max-w-md mx-auto space-y-1">
@@ -139,7 +155,7 @@ const RequestAssistanceModalInner: React.FC = () => {
               href="/needer/my-requests"
               className="px-5 py-2.5 bg-terracotta text-white rounded-lg text-xs font-bold hover:bg-terracotta-hover transition shadow-sm min-h-[44px] inline-flex items-center"
             >
-              Track Request Status →
+              See my request
             </a>
             <button
               onClick={() => {
@@ -147,11 +163,12 @@ const RequestAssistanceModalInner: React.FC = () => {
                 setStep(1);
                 setDescription('');
                 setLocation('');
+                setPin(null);
                 setContactValue('');
               }}
               className="px-5 py-2.5 bg-surface border border-stone-300 rounded-lg text-xs font-semibold text-charcoal hover:bg-stone-100 transition min-h-[44px]"
             >
-              Submit Another Request
+              Ask for something else
             </button>
           </div>
         </div>
@@ -174,16 +191,16 @@ const RequestAssistanceModalInner: React.FC = () => {
 
       <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-black text-charcoal tracking-tight">Request Humanitarian Assistance</h1>
+          <h1 className="text-[28px] md:text-[32px]">Ask for help</h1>
           <p className="text-sm text-charcoal-muted mt-1">
-            Fill in approximate needs. Your exact coordinates are never made public.
+            Three short steps. Your exact location is shared only with responders.
           </p>
         </div>
         <StepIndicator current={step} total={3} />
       </div>
 
       {/* Step breadcrumb title */}
-      <div className="text-xs font-bold text-charcoal-muted uppercase tracking-wider">
+      <div className="text-xs font-bold text-charcoal-muted capitalize">
         {STEPS[step - 1].title}
       </div>
 
@@ -194,7 +211,7 @@ const RequestAssistanceModalInner: React.FC = () => {
           {step === 1 && (
             <div className="space-y-4">
               <div>
-                <label htmlFor={disasterSelectId} className="text-xs font-bold uppercase tracking-wider text-charcoal-muted block mb-1">
+                <label htmlFor={disasterSelectId} className="text-xs font-bold capitalize text-charcoal-muted block mb-1">
                   1. Select Applicable Disaster Event
                 </label>
                 <select
@@ -205,14 +222,14 @@ const RequestAssistanceModalInner: React.FC = () => {
                 >
                   {disasters.map(d => (
                     <option key={d.id} value={d.id}>
-                      {d.name} ({d.category.toUpperCase()}) — {d.region}
+                      {d.name}, {d.region}
                     </option>
                   ))}
                 </select>
               </div>
 
               <fieldset>
-                <legend className="text-xs font-bold uppercase tracking-wider text-charcoal-muted mb-2">
+                <legend className="text-xs font-bold capitalize text-charcoal-muted mb-2">
                   2. Select What You Need Most
                 </legend>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3" role="radiogroup" aria-required="true">
@@ -234,7 +251,7 @@ const RequestAssistanceModalInner: React.FC = () => {
                         className="sr-only"
                       />
                       <h4 className="text-xs font-extrabold text-charcoal">{c.label}</h4>
-                      <p className="text-[11px] text-charcoal-muted mt-0.5">{c.desc}</p>
+                      <p className="text-xs text-charcoal-muted mt-0.5">{c.desc}</p>
                     </label>
                   ))}
                 </div>
@@ -246,7 +263,7 @@ const RequestAssistanceModalInner: React.FC = () => {
                   onClick={() => setStep(2)}
                   className="px-5 py-2.5 bg-terracotta text-white rounded-lg text-xs font-bold hover:bg-terracotta-hover transition flex items-center gap-1.5 shadow-sm min-h-[44px]"
                 >
-                  Next: Situation & Location <ArrowRight className="w-3.5 h-3.5" aria-hidden="true" />
+                  Next: Where you are <ArrowRight className="w-3.5 h-3.5" aria-hidden="true" />
                 </button>
               </div>
             </div>
@@ -256,7 +273,7 @@ const RequestAssistanceModalInner: React.FC = () => {
           {step === 2 && (
             <div className="space-y-4">
               <div>
-                <label htmlFor={descriptionId} className="text-xs font-bold uppercase tracking-wider text-charcoal-muted block mb-1">
+                <label htmlFor={descriptionId} className="text-xs font-bold capitalize text-charcoal-muted block mb-1">
                   Describe Your Immediate Situation & Needs <span aria-label="required">*</span>
                 </label>
                 <textarea
@@ -270,13 +287,13 @@ const RequestAssistanceModalInner: React.FC = () => {
                   onChange={(e) => setDescription(e.target.value)}
                   className="w-full p-3 bg-surface border border-stone-300 rounded-lg text-xs text-charcoal focus:outline-none focus:ring-2 focus:ring-dustyblue"
                 />
-                <span id={`${descriptionId}-hint`} className="text-[11px] text-charcoal-muted block mt-1">
+                <span id={`${descriptionId}-hint`} className="text-xs text-charcoal-muted block mt-1">
                   Describe who needs help, how many people, and what is most urgent.
                 </span>
               </div>
 
               <div>
-                <label htmlFor={locationId} className="text-xs font-bold uppercase tracking-wider text-charcoal-muted block mb-1">
+                <label htmlFor={locationId} className="text-xs font-bold capitalize text-charcoal-muted block mb-1">
                   Approximate Location / Landmark / Address <span aria-label="required">*</span>
                 </label>
                 <input
@@ -290,20 +307,57 @@ const RequestAssistanceModalInner: React.FC = () => {
                   onChange={(e) => setLocation(e.target.value)}
                   className="w-full p-2.5 bg-surface border border-stone-300 rounded-lg text-xs text-charcoal focus:outline-none focus:ring-2 focus:ring-dustyblue min-h-[44px]"
                 />
-                <span id={`${locationId}-hint`} className="text-[11px] text-charcoal-muted block mt-1">
-                  🔒 Privacy by Design: Only approximate sectors are shown to helpers. Exact addresses are shared strictly with dispatchers.
+                <div className="mt-2 flex flex-col sm:flex-row sm:items-center gap-2 p-2.5 rounded-lg border border-dashed border-stone-300 bg-surface-raised">
+                  <div className="flex-1 text-xs text-charcoal-muted">
+                    {pin ? (
+                      <>
+                        <span className="font-bold text-charcoal block">📍 Pinned: {pin.label}</span>
+                        {pin.lat.toFixed(5)}, {pin.lng.toFixed(5)}. This helps rescue teams find you.
+                      </>
+                    ) : (
+                      'Optional: pin your exact spot on the map so responders can navigate to you.'
+                    )}
+                  </div>
+                  <div className="flex gap-2">
+                    {pin && (
+                      <button type="button" onClick={() => setPin(null)} className="px-3 py-2 border border-stone-300 rounded text-xs font-semibold text-charcoal hover:bg-stone-100 min-h-[40px]">
+                        Remove pin
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => setPickerOpen(true)}
+                      className="px-3 py-2 bg-surface border border-stone-300 rounded text-xs font-bold text-charcoal hover:bg-stone-100 inline-flex items-center gap-1 min-h-[40px] whitespace-nowrap"
+                    >
+                      <MapPin className="w-4 h-4 text-terracotta" aria-hidden="true" /> {pin ? 'Change pin' : 'Pin on map'}
+                    </button>
+                  </div>
+                </div>
+                <LocationPicker
+                  open={pickerOpen}
+                  initial={pin ?? savedLoc}
+                  title="Pin where you need help"
+                  onClose={() => setPickerOpen(false)}
+                  onSelect={(picked) => {
+                    setPin(picked);
+                    if (!location.trim()) setLocation(picked.label);
+                    saveLocation(picked);
+                  }}
+                />
+                <span id={`${locationId}-hint`} className="text-xs text-charcoal-muted block mt-1">
+                  Your pin and address are shown to responders only, never on the public map.
                 </span>
               </div>
 
               <div>
-                <label htmlFor={accessibilityId} className="text-xs font-bold uppercase tracking-wider text-charcoal-muted block mb-1">
-                  Specific Vulnerabilities / Accessibility Needs
+                <label htmlFor={accessibilityId} className="text-xs font-bold capitalize text-charcoal-muted block mb-1">
+                  Anyone who needs extra help?
                   <span className="ml-1 text-charcoal-muted font-normal normal-case">(Optional)</span>
                 </label>
                 <input
                   id={accessibilityId}
                   type="text"
-                  placeholder="e.g., Elderly bed-ridden person, Infant requiring formula, Wheelchair needed"
+                  placeholder="e.g. elderly person who cannot walk, a baby, wheelchair user"
                   value={accessibilityNeeds}
                   onChange={(e) => setAccessibilityNeeds(e.target.value)}
                   className="w-full p-2.5 bg-surface border border-stone-300 rounded-lg text-xs text-charcoal focus:outline-none focus:ring-2 focus:ring-dustyblue min-h-[44px]"
@@ -325,7 +379,7 @@ const RequestAssistanceModalInner: React.FC = () => {
                   aria-disabled={!description || !location}
                   className="px-5 py-2.5 bg-terracotta text-white rounded-lg text-xs font-bold hover:bg-terracotta-hover transition flex items-center gap-1.5 shadow-sm disabled:opacity-50 min-h-[44px]"
                 >
-                  Next: Contact Method <ArrowRight className="w-3.5 h-3.5" aria-hidden="true" />
+                  Next: How to reach you <ArrowRight className="w-3.5 h-3.5" aria-hidden="true" />
                 </button>
               </div>
             </div>
@@ -335,8 +389,8 @@ const RequestAssistanceModalInner: React.FC = () => {
           {step === 3 && (
             <div className="space-y-4">
               <fieldset>
-                <legend className="text-xs font-bold uppercase tracking-wider text-charcoal-muted block mb-1">
-                  How Should Responders Contact You?
+                <legend className="text-xs font-bold capitalize text-charcoal-muted block mb-1">
+                  How should responders reach you?
                 </legend>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                   {[
@@ -369,7 +423,7 @@ const RequestAssistanceModalInner: React.FC = () => {
 
               {(contactMethod === 'phone' || contactMethod === 'sms') && (
                 <div>
-                  <label htmlFor={contactValueId} className="text-xs font-bold uppercase tracking-wider text-charcoal-muted block mb-1">
+                  <label htmlFor={contactValueId} className="text-xs font-bold capitalize text-charcoal-muted block mb-1">
                     Phone / Mobile Number <span aria-label="required">*</span>
                   </label>
                   <input
@@ -387,11 +441,11 @@ const RequestAssistanceModalInner: React.FC = () => {
 
               {/* Request review summary */}
               <div className="p-4 bg-surface-raised rounded-lg border border-stone-200 text-xs space-y-1.5" role="region" aria-label="Request summary for review">
-                <span className="font-bold text-charcoal uppercase text-[10px] block">Request Summary — Please Review</span>
+                <span className="font-bold text-charcoal capitalize text-xs block">Check your request</span>
                 <p><strong>Category:</strong> <span className="capitalize">{categories.find(c => c.id === category)?.label ?? category}</span></p>
-                <p><strong>Location:</strong> {location}</p>
+                <p><strong>Location:</strong> {location}{pin ? ` (pinned ${pin.lat.toFixed(4)}, ${pin.lng.toFixed(4)})` : ''}</p>
                 <p><strong>Description:</strong> {description}</p>
-                {accessibilityNeeds && <p className="text-terracotta"><strong>Vulnerability / Access Needs:</strong> {accessibilityNeeds}</p>}
+                {accessibilityNeeds && <p className="text-terracotta"><strong>Extra help needed:</strong> {accessibilityNeeds}</p>}
               </div>
 
               {/* Error message */}
@@ -417,7 +471,7 @@ const RequestAssistanceModalInner: React.FC = () => {
                   aria-busy={submitMutation.isPending}
                   className="px-6 py-2 bg-terracotta text-white rounded-lg text-xs font-bold hover:bg-terracotta-hover transition shadow-sm disabled:opacity-60 min-h-[44px]"
                 >
-                  {submitMutation.isPending ? 'Submitting Request…' : 'Confirm & Submit Assistance Request'}
+                  {submitMutation.isPending ? 'Sending…' : 'Send request'}
                 </button>
               </div>
             </div>

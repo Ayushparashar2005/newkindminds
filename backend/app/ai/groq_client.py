@@ -6,6 +6,15 @@ from backend.app.ai.safety_guardrails import check_for_immediate_crisis, sanitiz
 
 logger = logging.getLogger(__name__)
 
+STYLE_RULE = (
+    " Write in plain, everyday English. Never use em dashes or en dashes; use a comma, colon or full stop instead."
+)
+
+
+def _plain(text: str) -> str:
+    """Strip em/en dashes from model output so the UI never shows them."""
+    return text.replace(" \u2014 ", ", ").replace("\u2014", ", ").replace(" \u2013 ", " to ").replace("\u2013", "-")
+
 class GroqService:
     def __init__(self):
         self.api_key = settings.GROQ_API_KEY
@@ -23,6 +32,10 @@ class GroqService:
         Creates a chat completion with Groq using openai/gpt-oss-120b and reasoning parameters.
         Includes backward-compatible fallback for parameter names.
         """
+        messages = [
+            {**m, "content": m["content"] + STYLE_RULE} if m.get("role") == "system" else m
+            for m in messages
+        ]
         params = {
             "model": settings.GROQ_MODEL,
             "messages": messages,
@@ -107,7 +120,7 @@ class GroqService:
                     {"role": "user", "content": user_content}
                 ]
                 response = self._create_completion(messages, stream=False)
-                ai_text = response.choices[0].message.content
+                ai_text = _plain(response.choices[0].message.content or "")
                 ai_text = sanitize_ai_output(ai_text)
                 return {
                     "acknowledged": True,
@@ -160,7 +173,7 @@ class GroqService:
                 ]
                 completion = self._create_completion(messages, stream=True)
                 for chunk in completion:
-                    content = chunk.choices[0].delta.content or ""
+                    content = _plain(chunk.choices[0].delta.content or "")
                     if content:
                         yield content
                 return
@@ -194,7 +207,7 @@ class GroqService:
                 response = self._create_completion(messages, stream=False)
                 return {
                     "is_ai_summary": True,
-                    "summary_text": response.choices[0].message.content.strip(),
+                    "summary_text": _plain(response.choices[0].message.content.strip()),
                     "disclaimer": "This is an automated summary of verified official SOP. Refer to the full official guidance below."
                 }
             except Exception as e:
@@ -226,7 +239,7 @@ class GroqService:
                 ]
                 completion = self._create_completion(messages, stream=True)
                 for chunk in completion:
-                    content = chunk.choices[0].delta.content or ""
+                    content = _plain(chunk.choices[0].delta.content or "")
                     if content:
                         yield content
                 return

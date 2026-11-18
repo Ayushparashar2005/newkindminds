@@ -1,4 +1,6 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { loadLocation, saveLocation, distanceKm as kmBetween, DEFAULT_LOCATION, type PickedLocation } from '../../lib/location';
+import { LocationPicker } from '../ui/LocationPicker';
 import { useQuery, QueryClientProvider } from '@tanstack/react-query';
 import { queryClient } from '../../lib/queryClient';
 import { api } from '../../lib/api';
@@ -14,11 +16,28 @@ import {
   Clock,
   Droplets,
   Home,
-  Cross
+  Cross,
+  CloudRain,
+  Wind,
+  Thermometer
 } from 'lucide-react';
 
 const NeederDashboardInner: React.FC = () => {
-  const [userLocation, setUserLocation] = useState('Veraval / Porbandar Coast, Gujarat');
+  const [loc, setLoc] = useState<PickedLocation>(DEFAULT_LOCATION);
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const userLocation = loc.label;
+  const userCoords: [number, number] = [loc.lat, loc.lng];
+
+  useEffect(() => {
+    loadLocation().then(setLoc);
+  }, []);
+
+  const { data: weather, isLoading: weatherLoading, isError: weatherError } = useQuery({
+    queryKey: ['weather', loc.lat.toFixed(3), loc.lng.toFixed(3)],
+    queryFn: () => api.getLiveWeather(loc.lat, loc.lng),
+    staleTime: 10 * 60_000,
+    retry: 1,
+  });
 
   const { data: disasters = [], isLoading: disastersLoading } = useQuery({
     queryKey: ['disasters'],
@@ -39,7 +58,13 @@ const NeederDashboardInner: React.FC = () => {
     staleTime: 60_000,
   });
 
-  const nearbyResources = allResources.slice(0, 4);
+  const distanceKm = (lat: number, lng: number) => kmBetween(userCoords[0], userCoords[1], lat, lng);
+  const nearbyResources = allResources
+    .filter((r) => r.visibility === 'public')
+    .map((r) => ({ ...r, distance: distanceKm(r.latitude, r.longitude) }))
+    .sort((a, b) => a.distance - b.distance)
+    .slice(0, 4);
+  const activeDisasters = disasters.filter((d) => d.status === 'active');
 
   return (
     <div className="space-y-6" id="main-content">
@@ -51,23 +76,77 @@ const NeederDashboardInner: React.FC = () => {
         <div className="flex items-center gap-2">
           <MapPin className="w-5 h-5 text-terracotta shrink-0" aria-hidden="true" />
           <div>
-            <span className="text-[11px] font-bold uppercase tracking-wider text-charcoal-muted block">
-              Your Current Location / Region
+            <span className="text-xs font-bold capitalize text-charcoal-muted block">
+              Your location
             </span>
             <span className="text-sm font-extrabold text-charcoal">{userLocation}</span>
+            <span className="text-xs text-charcoal-muted block">{loc.lat.toFixed(4)}° N, {loc.lng.toFixed(4)}° E</span>
           </div>
         </div>
         <button
-          onClick={() => {
-            const loc = prompt('Enter your city, district or landmark:', userLocation);
-            if (loc) setUserLocation(loc);
-          }}
-          aria-label={`Change location — currently: ${userLocation}`}
+          onClick={() => setPickerOpen(true)}
+          aria-label={`Change location. Current: ${userLocation}`}
           className="text-xs font-semibold px-3 py-1.5 rounded-lg border border-stone-300 hover:bg-surface-raised transition text-charcoal self-start sm:self-auto min-h-[44px]"
         >
           Change Location
         </button>
       </div>
+
+      <LocationPicker
+        open={pickerOpen}
+        initial={loc}
+        title="Set your location"
+        onClose={() => setPickerOpen(false)}
+        onSelect={(picked) => { setLoc(picked); saveLocation(picked); }}
+      />
+
+      {/* Live Weather for the chosen location */}
+      <section className="neu-card p-4" aria-labelledby="weather-heading">
+        <div className="flex items-center justify-between gap-2 mb-2">
+          <h2 id="weather-heading" className="text-sm font-extrabold text-charcoal">Weather here</h2>
+          {weather && (
+            <span className={`px-2 py-0.5 rounded text-xs font-bold capitalize ${
+              weather.hazard_level === 'critical' ? 'bg-red-100 text-red-800' : weather.hazard_level === 'elevated' ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800'
+            }`}>
+              Hazard: {weather.hazard_level}
+            </span>
+          )}
+        </div>
+        {weatherLoading ? (
+          <div className="skeleton h-12 w-full" aria-busy="true" aria-label="Loading weather" />
+        ) : weatherError || !weather ? (
+          <p className="text-xs text-charcoal-muted">Live weather is unavailable right now. Check IMD (mausam.imd.gov.in) for official forecasts.</p>
+        ) : (
+          <>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+              <div className="p-2 rounded bg-surface-raised border border-stone-200 flex items-center gap-2">
+                <Thermometer className="w-4 h-4 text-terracotta" aria-hidden="true" />
+                <span><strong>{Math.round(weather.current.temperature_c)}°C</strong> <span className="text-charcoal-muted">feels {Math.round(weather.current.feels_like_c)}°C</span></span>
+              </div>
+              <div className="p-2 rounded bg-surface-raised border border-stone-200 flex items-center gap-2">
+                <Droplets className="w-4 h-4 text-sky-600" aria-hidden="true" />
+                <span><strong>{weather.current.humidity_percent}%</strong> <span className="text-charcoal-muted">humidity</span></span>
+              </div>
+              <div className="p-2 rounded bg-surface-raised border border-stone-200 flex items-center gap-2">
+                <Wind className="w-4 h-4 text-dustyblue" aria-hidden="true" />
+                <span><strong>{Math.round(weather.current.wind_speed_kmh)} km/h</strong> <span className="text-charcoal-muted">gusts {Math.round(weather.current.wind_gusts_kmh)}</span></span>
+              </div>
+              <div className="p-2 rounded bg-surface-raised border border-stone-200 flex items-center gap-2">
+                <CloudRain className="w-4 h-4 text-sky-700" aria-hidden="true" />
+                <span><strong>{weather.current.precipitation_mm} mm</strong> <span className="text-charcoal-muted">rain now</span></span>
+              </div>
+            </div>
+            {weather.advisories?.length > 0 && (
+              <ul className="mt-2 space-y-1 text-xs text-amber-900" role="list">
+                {weather.advisories.map((a: any, i: number) => (
+                  <li key={i} className="p-2 rounded bg-amber-50 border border-amber-200">{typeof a === 'string' ? a : a.message || a.title || JSON.stringify(a)}</li>
+                ))}
+              </ul>
+            )}
+            <p className="text-xs text-charcoal-muted mt-2">Source: Open-Meteo. For official warnings follow IMD and your State Disaster Management Authority.</p>
+          </>
+        )}
+      </section>
 
       {/* Primary Action Grid */}
       <section aria-labelledby="quick-actions-heading">
@@ -75,8 +154,8 @@ const NeederDashboardInner: React.FC = () => {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <a
             href="/needer/request"
-            className="neu-card-interactive p-5 bg-gradient-to-br from-[#FDFBF7] to-[#F5ECE5] border-l-4 border-terracotta flex flex-col justify-between group"
-            aria-label="Request Assistance — food, water, medical care, shelter, or evacuation"
+            className="neu-card-interactive p-5 flex flex-col justify-between group"
+            aria-label="Ask for help: food, water, medical care, shelter or evacuation"
           >
             <div>
               <div className="w-10 h-10 rounded-xl bg-terracotta/10 text-terracotta flex items-center justify-center mb-3" aria-hidden="true">
@@ -86,18 +165,18 @@ const NeederDashboardInner: React.FC = () => {
                 Request Assistance
               </h3>
               <p className="text-xs text-charcoal-muted mt-1">
-                Submit a request for food, drinking water, medical care, shelter, or evacuation.
+                Food, drinking water, medical care, shelter or evacuation.
               </p>
             </div>
             <span className="mt-4 text-xs font-bold text-terracotta inline-flex items-center gap-1" aria-hidden="true">
-              Submit Request &rarr;
+              Submit Request
             </span>
           </a>
 
           <a
             href="/needer/find-help"
-            className="neu-card-interactive p-5 bg-gradient-to-br from-[#FDFBF7] to-[#EBF0F3] border-l-4 border-dustyblue flex flex-col justify-between group"
-            aria-label="Find Nearby Help — verified shelters, clinics, food centers, rescue teams"
+            className="neu-card-interactive p-5 flex flex-col justify-between group"
+            aria-label="Find help nearby: shelters, clinics, food and rescue teams"
           >
             <div>
               <div className="w-10 h-10 rounded-xl bg-dustyblue/10 text-dustyblue flex items-center justify-center mb-3" aria-hidden="true">
@@ -107,18 +186,18 @@ const NeederDashboardInner: React.FC = () => {
                 Find Nearby Help
               </h3>
               <p className="text-xs text-charcoal-muted mt-1">
-                Locate verified emergency shelters, field clinics, food centers, and rescue teams.
+                Shelters, clinics, food points and rescue teams, nearest first.
               </p>
             </div>
             <span className="mt-4 text-xs font-bold text-dustyblue inline-flex items-center gap-1" aria-hidden="true">
-              Browse Directory &rarr;
+              Browse Directory
             </span>
           </a>
 
           <a
             href="/needer/mental-health"
-            className="neu-card-interactive p-5 bg-gradient-to-br from-[#FDFBF7] to-[#EEF3EF] border-l-4 border-sage flex flex-col justify-between group"
-            aria-label="Mental Health and Calming — grounding, breathing exercises, journal, crisis helplines"
+            className="neu-card-interactive p-5 flex flex-col justify-between group"
+            aria-label="Mental health: grounding, breathing, journal and helplines"
           >
             <div>
               <div className="w-10 h-10 rounded-xl bg-sage/10 text-sage flex items-center justify-center mb-3" aria-hidden="true">
@@ -132,28 +211,28 @@ const NeederDashboardInner: React.FC = () => {
               </p>
             </div>
             <span className="mt-4 text-xs font-bold text-sage inline-flex items-center gap-1" aria-hidden="true">
-              Ground Yourself &rarr;
+              Ground Yourself
             </span>
           </a>
 
           <a
             href="/needer/guidance"
-            className="neu-card-interactive p-5 bg-gradient-to-br from-[#FDFBF7] to-[#FAF4E8] border-l-4 border-sand flex flex-col justify-between group"
-            aria-label="Emergency Guidance — official safety procedures for flood, cyclone, and evacuation"
+            className="neu-card-interactive p-5 flex flex-col justify-between group"
+            aria-label="Emergency guidance: what to do in a flood, cyclone or evacuation"
           >
             <div>
-              <div className="w-10 h-10 rounded-xl bg-sand/10 text-sand flex items-center justify-center mb-3" aria-hidden="true">
+              <div className="w-10 h-10 rounded-xl bg-sand/10 text-sand-dark flex items-center justify-center mb-3" aria-hidden="true">
                 <Compass className="w-6 h-6" />
               </div>
-              <h3 className="text-base font-extrabold text-charcoal group-hover:text-sand transition">
+              <h3 className="text-base font-extrabold text-charcoal group-hover:text-sand-dark transition">
                 Emergency Guidance
               </h3>
               <p className="text-xs text-charcoal-muted mt-1">
-                Official verified safety procedures for flood water, cyclone winds, and safe evacuation.
+                What to do in a flood, cyclone or evacuation.
               </p>
             </div>
-            <span className="mt-4 text-xs font-bold text-sand inline-flex items-center gap-1" aria-hidden="true">
-              Read Procedures &rarr;
+            <span className="mt-4 text-xs font-bold text-sand-dark inline-flex items-center gap-1" aria-hidden="true">
+              Read Procedures
             </span>
           </a>
         </div>
@@ -162,8 +241,8 @@ const NeederDashboardInner: React.FC = () => {
       {/* Active Disaster Advisories */}
       <section className="neu-card p-5" aria-labelledby="disasters-heading">
         <h2 id="disasters-heading" className="text-base font-extrabold text-charcoal mb-3 flex items-center gap-2">
-          <span className="w-2.5 h-2.5 rounded-full bg-emergency animate-ping" aria-hidden="true" />
-          Active Disaster Situations Relevant to Your Region
+          <span className="w-2.5 h-2.5 rounded-full bg-emergency" aria-hidden="true" />
+          Active now
         </h2>
 
         {disastersLoading ? (
@@ -172,23 +251,23 @@ const NeederDashboardInner: React.FC = () => {
               <div key={i} className="skeleton h-16 w-full" />
             ))}
           </div>
-        ) : disasters.length === 0 ? (
+        ) : activeDisasters.length === 0 ? (
           <p className="text-xs text-charcoal-muted p-4 bg-stone-50 rounded border border-stone-200">
-            No active disaster advisories for your region at this time.
+            Nothing active near you right now.
           </p>
         ) : (
           <ul className="space-y-3" role="list">
-            {disasters.map(d => (
+            {activeDisasters.map(d => (
               <li key={d.id} className="p-4 rounded-lg bg-surface-raised border border-stone-200/80 flex flex-col md:flex-row md:items-center justify-between gap-3">
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-red-100 text-red-800">
+                    <span className="px-2 py-0.5 rounded text-xs font-bold capitalize bg-red-100 text-red-800">
                       {d.category}
                     </span>
                     <span className="text-xs font-extrabold text-charcoal">{d.name}</span>
                   </div>
                   <p className="text-xs text-charcoal-light mt-1 max-w-2xl">{d.description}</p>
-                  <span className="text-[11px] text-charcoal-muted block mt-1">
+                  <span className="text-xs text-charcoal-muted block mt-1">
                     Reported by: {d.source} | Lifecycle Stage: <strong>{d.lifecycle_stage}</strong>
                   </span>
                 </div>
@@ -197,7 +276,7 @@ const NeederDashboardInner: React.FC = () => {
                   aria-label={`View safety guidance for ${d.name}`}
                   className="px-3 py-1.5 bg-surface border border-stone-300 text-charcoal hover:bg-stone-100 rounded text-xs font-semibold whitespace-nowrap self-start md:self-auto min-h-[44px] inline-flex items-center"
                 >
-                  View Safety Guidance
+                  What to do
                 </a>
               </li>
             ))}
@@ -209,11 +288,11 @@ const NeederDashboardInner: React.FC = () => {
       <section className="neu-card p-5" aria-labelledby="my-requests-heading">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h2 id="my-requests-heading" className="text-base font-extrabold text-charcoal">Your Submitted Requests</h2>
-            <p className="text-xs text-charcoal-muted">Track the response progress from humanitarian responders.</p>
+            <h2 id="my-requests-heading" className="text-base font-extrabold text-charcoal">Your requests</h2>
+            <p className="text-xs text-charcoal-muted">Whether a team has picked them up.</p>
           </div>
           <a href="/needer/my-requests" className="text-xs font-bold text-terracotta hover:underline focus-visible:underline">
-            View All &rarr;
+            View All
           </a>
         </div>
 
@@ -223,9 +302,9 @@ const NeederDashboardInner: React.FC = () => {
           </div>
         ) : myRequests.length === 0 ? (
           <div className="p-6 text-center bg-stone-50 rounded border border-stone-200 space-y-2">
-            <p className="text-xs text-charcoal-muted">You have not submitted any active requests.</p>
+            <p className="text-xs text-charcoal-muted">You have not asked for help yet.</p>
             <a href="/needer/request" className="text-xs font-bold text-terracotta hover:underline">
-              Request Assistance →
+              Request Assistance
             </a>
           </div>
         ) : (
@@ -237,14 +316,14 @@ const NeederDashboardInner: React.FC = () => {
                     <span className="font-bold text-charcoal capitalize">{req.assistance_category} Request</span>
                     <StatusBadge status={req.status} />
                   </div>
-                  <p className="text-charcoal-light text-[11px] mt-0.5 line-clamp-1">{req.description}</p>
+                  <p className="text-charcoal-light text-xs mt-0.5 line-clamp-1">{req.description}</p>
                 </div>
                 <time
                   dateTime={req.created_at}
-                  className="text-[10px] text-charcoal-muted whitespace-nowrap flex items-center gap-1"
+                  className="text-xs text-charcoal-muted whitespace-nowrap flex items-center gap-1"
                 >
                   <Clock className="w-3 h-3" aria-hidden="true" />
-                  {new Date(req.created_at).toLocaleDateString()}
+                  {new Date(req.created_at).toLocaleDateString('en-IN')}
                 </time>
               </li>
             ))}
@@ -256,11 +335,11 @@ const NeederDashboardInner: React.FC = () => {
       <section className="neu-card p-5" aria-labelledby="resources-heading">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h2 id="resources-heading" className="text-base font-extrabold text-charcoal">Verified Relief Points Nearby</h2>
-            <p className="text-xs text-charcoal-muted">Hospitals, evacuation shelters, and clean water distribution centers.</p>
+            <h2 id="resources-heading" className="text-base font-extrabold text-charcoal">Help nearby</h2>
+            <p className="text-xs text-charcoal-muted">Hospitals, shelters and drinking water.</p>
           </div>
           <a href="/disaster/map" className="text-xs font-bold text-dustyblue hover:underline focus-visible:underline">
-            Open Map &rarr;
+            Open Map
           </a>
         </div>
 
@@ -270,7 +349,7 @@ const NeederDashboardInner: React.FC = () => {
           </div>
         ) : nearbyResources.length === 0 ? (
           <p className="text-xs text-charcoal-muted p-4 bg-stone-50 rounded border border-stone-200">
-            No verified resources available in your area. Check back shortly.
+            Nothing listed near you yet. Call 1078 for the district control room.
           </p>
         ) : (
           <ul className="grid grid-cols-1 md:grid-cols-2 gap-3" role="list">
@@ -287,13 +366,18 @@ const NeederDashboardInner: React.FC = () => {
                     <h3 className="text-xs font-bold text-charcoal truncate">{res.name}</h3>
                     <StatusBadge status={res.operational_status} />
                   </div>
-                  <p className="text-[11px] text-charcoal-light mt-0.5 truncate">
+                  <p className="text-xs text-charcoal-light mt-0.5 truncate">
                     <span aria-hidden="true">📍 </span>
                     <span className="sr-only">Location: </span>
                     {res.address_approximate}
                   </p>
+                  {(
+                    <p className="text-xs text-charcoal-muted mt-0.5">
+                      ~{Math.round(res.distance).toLocaleString('en-IN')} km from {userLocation}
+                    </p>
+                  )}
                   {res.contact_public && (
-                    <p className="text-[11px] text-stone-600 mt-1 font-medium">
+                    <p className="text-xs text-stone-600 mt-1 font-medium">
                       <span className="sr-only">Contact: </span>{res.contact_public}
                     </p>
                   )}

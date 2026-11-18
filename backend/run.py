@@ -1,5 +1,5 @@
 """
-KindMinds Backend — Startup Script
+KindMinds backend startup Script
 Run from project root: python backend/run.py
 Or from backend/ dir: python run.py
 """

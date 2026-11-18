@@ -27,7 +27,7 @@ def check_for_immediate_crisis(text: str) -> Tuple[bool, Optional[str]]:
                 "CRISIS_ALERT: If you or someone around you is in immediate physical danger, experiencing acute distress, "
                 "or having thoughts of self-harm, please reach out to emergency services immediately. "
                 "KindMinds is an informational platform and does not provide active dispatch or crisis response services. "
-                "National Emergency Services: 112 / 911 | National Mental Health Helpline (KIRAN India): 1800-599-0019 | Suicide & Crisis Lifeline: 988."
+                "Emergency (ERSS): 112 | Tele-MANAS (free, 24x7 mental health): 14416 or 1-800-891-4416 | Ambulance: 108."
             )
     return False, None
 

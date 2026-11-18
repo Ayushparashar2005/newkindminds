@@ -16,12 +16,12 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({ status, type = 'resour
     bgClass = "bg-sky-100 text-sky-800 border border-sky-300";
   } else if (['submitted', 'pending', 'preparing', 'monitoring'].includes(norm)) {
     bgClass = "bg-amber-100 text-amber-800 border border-amber-300";
-  } else if (['critical', 'severe', 'out of stock', 'unable to fulfill', 'closed'].includes(norm)) {
+  } else if (['critical', 'severe', 'out of stock', 'unable to fulfill', 'closed', 'cancelled'].includes(norm)) {
     bgClass = "bg-red-100 text-red-800 border border-red-300";
   }
 
   return (
-    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize tracking-wide ${bgClass}`}>
+    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold capitalize whitespace-nowrap ${bgClass}`}>
       {norm}
     </span>
   );

@@ -14,7 +14,6 @@ from backend.app.api.sop import router as sop_router
 from backend.app.api.analytics import router as analytics_router
 from backend.app.api.mental_health import router as mental_health_router
 from backend.app.api.seed import router as seed_router
-from backend.app.api.neon_services import router as neon_router
 from backend.app.api.external_public_apis import router as external_apis_router
 
 @asynccontextmanager
@@ -34,7 +33,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title=settings.PROJECT_NAME,
     version=settings.VERSION,
-    description="KindMinds — AI-Powered Mental Health Support & Humanitarian Disaster Response Platform",
+    description="KindMinds API: disaster relief and mental health support for India",
     lifespan=lifespan
 )
 
@@ -57,7 +56,6 @@ app.include_router(sop_router, prefix=settings.API_V1_STR)
 app.include_router(analytics_router, prefix=settings.API_V1_STR)
 app.include_router(mental_health_router, prefix=settings.API_V1_STR)
 app.include_router(seed_router, prefix=settings.API_V1_STR)
-app.include_router(neon_router, prefix=settings.API_V1_STR)
 app.include_router(external_apis_router, prefix=settings.API_V1_STR)
 
 @app.get("/")

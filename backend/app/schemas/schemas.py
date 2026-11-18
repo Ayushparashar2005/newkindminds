@@ -185,6 +185,7 @@ class AssistanceRequestResponse(BaseModel):
     accessibility_needs: Optional[str] = None
     status: str
     assigned_organization_id: Optional[str] = None
+    assigned_organization_name: Optional[str] = None
     assigned_helper_name: Optional[str] = None
     notes: Optional[str] = None
     is_demo: bool

@@ -26,46 +26,43 @@ Both panels share unified infrastructure for:
 - **Frontend**: Astro 4, React 18, TypeScript, Tailwind CSS, TanStack Query, Lucide icons.
 - **Design System**: Humanitarian Bauhaus × Neumorphism (warm off-white surfaces, charcoal typography, terracotta, dusty blue, soft sage, warm sand).
 - **Backend**: FastAPI (Python), SQLAlchemy 2.0, Pydantic v2, Uvicorn.
-- **Database**: Neon PostgreSQL with PostGIS (supports local SQLite fallback).
+- **Database**: SQLite by default (PostgreSQL supported via `DATABASE_URL`).
 - **AI Integration**: Groq LLM API with strict safety guardrails and crisis detection.
 
 ---
 
 ## 🚀 Quick Start Guide
 
-### 1. Start the FastAPI Backend
+**Requirements:** Python 3.10+ and Node.js 18+.
 
 ```bash
-cd backend
-# Activate virtual environment
-.venv\Scripts\activate   # Windows
-# source .venv/bin/activate # Linux/Mac
-
-# Install dependencies (already installed)
-pip install -r requirements.txt
-
-# Launch API server
-uvicorn backend.app.main:app --host 0.0.0.0 --port 8000 --reload
+./start.sh
 ```
 
-The backend starts at `http://localhost:8000`.
-- Swagger Docs: `http://localhost:8000/docs`
-- Health Check: `http://localhost:8000/api/health`
-- Initial demo data is seeded automatically on startup.
+That's it. On first run it creates `backend/.venv`, installs Python packages and frontend packages (via pnpm 10), then starts:
 
-### 2. Start the Astro Frontend
+- **Frontend:** http://localhost:4321
+- **Backend API:** http://localhost:8001 (Swagger docs at `/docs`, health check at `/api/health`)
+
+Press `Ctrl+C` to stop both. India reference data (real agencies, hospitals, NDRF battalions, helplines and NDMA guidance) is seeded automatically into a local SQLite file (`kindminds_dev.db`) on first startup; delete that file to reset.
+
+### Optional: enable AI features
+
+Copy `.env.example` to `.env` and set `GROQ_API_KEY` (free at https://console.groq.com/keys). Without a key, SOP summaries and thought reframing use safe built-in fallback text.
+
+### Running the parts manually
 
 ```bash
+# Backend (from project root)
+python3.12 -m venv backend/.venv
+backend/.venv/bin/pip install -r backend/requirements.txt
+backend/.venv/bin/python backend/run.py
+
+# Frontend (in another terminal)
 cd frontend
-
-# Install dependencies (already installed)
-pnpm install
-
-# Run Astro development server
-pnpm run dev
+npx pnpm@10 install
+npx pnpm@10 run dev
 ```
-
-The frontend launches at `http://localhost:4321`.
 
 ---
 
@@ -86,7 +83,7 @@ The frontend launches at `http://localhost:4321`.
 | `/helper/resources` | Warehouses, bunker depots, and stockpile inventory |
 | `/helper/search-groups`| Search-and-rescue squads and capabilities |
 | `/helper/sop` | Helper SOP library with Groq AI 3-step summarizer |
-| `/helper/profile` | Responder profile and verification status |
+| `/helper/profile` | Editable responder profile (saved in the browser) |
 | `/disaster/map` | Geospatial interactive relief map |
 | `/disaster/organizations`| Verified humanitarian NGO directory |
 | `/disaster/sop` | Verified Standard Operating Procedures |
@@ -101,5 +98,5 @@ The frontend launches at `http://localhost:4321`.
 2. **AI Guardrails**: AI cannot diagnose mental illnesses or fabricate emergency dispatches.
 3. **Location Privacy**: Exact private household locations are never published.
 4. **Calculated Metrics**: All dashboard figures are computed live from active database records.
-5. **Clear DEMO Labeling**: Seeded development data is explicitly labeled with amber [DEMO] banners.
+5. **Real Public Data Only**: Seeded agencies, facilities and helplines are real Indian public services with no invented phone numbers. Sample requests carry no personal details.
 

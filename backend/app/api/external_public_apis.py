@@ -1,4 +1,6 @@
 import urllib.request
+import urllib.parse
+from datetime import datetime, timedelta
 import json
 import logging
 from typing import List, Optional
@@ -18,12 +20,18 @@ def get_live_earthquakes(
     Ingests live global seismic events from the USGS Earthquake Hazards Program (Public APIs repository).
     Normalizes coordinates and severity into KindMinds disaster format.
     """
-    url = f"https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/{'4.5' if min_magnitude >= 4.5 else '2.5'}_day.geojson"
+    # India & neighbourhood (Himalaya, Hindu Kush, Myanmar arc, Andaman–Sumatra), last 30 days
+    starttime = (datetime.utcnow() - timedelta(days=30)).strftime("%Y-%m-%d")
+    url = (
+        "https://earthquake.usgs.gov/fdsnws/event/1/query?format=geojson&orderby=time"
+        f"&starttime={starttime}&minmagnitude={min_magnitude}&limit={limit}"
+        "&minlatitude=5&maxlatitude=38&minlongitude=66&maxlongitude=98"
+    )
     try:
         req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
         with urllib.request.urlopen(req, timeout=10) as resp:
             data = json.loads(resp.read().decode())
-        
+
         events = []
         for feat in data.get("features", [])[:limit]:
             props = feat.get("properties", {})
@@ -151,3 +159,76 @@ def geocode_location(
         logger.error(f"Failed to geocode location: {e}")
         raise HTTPException(status_code=502, detail=f"Failed to geocode location: {str(e)}")
 
+
+
+# --- OpenStreetMap Nominatim (address-level search + reverse geocoding) -------------
+# Usage policy: identify the app with a generic User-Agent, keep volume low (user-triggered only).
+NOMINATIM = "https://nominatim.openstreetmap.org"
+NOMINATIM_UA = "KindMinds/1.0"
+
+
+def _nominatim(path: str, params: dict):
+    url = f"{NOMINATIM}/{path}?{urllib.parse.urlencode(params)}"
+    req = urllib.request.Request(url, headers={"User-Agent": NOMINATIM_UA, "Accept-Language": "en"})
+    with urllib.request.urlopen(req, timeout=10) as resp:
+        return json.loads(resp.read().decode())
+
+
+def _short_label(addr: dict, fallback: str) -> str:
+    parts = []
+    for key in ("road", "neighbourhood", "suburb", "village", "town", "city_district", "city", "county", "state_district", "state"):
+        val = addr.get(key)
+        if val and val not in parts:
+            parts.append(val)
+    return ", ".join(parts[:4]) if parts else fallback
+
+
+@router.get("/places", summary="Search Indian addresses, localities and landmarks (OpenStreetMap Nominatim)")
+def search_places(
+    query: str = Query(..., min_length=2, description="Street, locality, landmark, city or PIN code"),
+    limit: int = Query(6, ge=1, le=10),
+):
+    try:
+        data = _nominatim("search", {
+            "q": query, "format": "jsonv2", "addressdetails": 1, "limit": limit, "countrycodes": "in",
+        })
+        results = [
+            {
+                "label": _short_label(r.get("address", {}), r.get("display_name", query)),
+                "display_name": r.get("display_name"),
+                "latitude": float(r["lat"]),
+                "longitude": float(r["lon"]),
+                "type": r.get("type"),
+            }
+            for r in data
+        ]
+        return {"source": "OpenStreetMap Nominatim", "query": query, "results": results}
+    except Exception as e:
+        logger.error(f"Nominatim search failed: {e}")
+        raise HTTPException(status_code=502, detail="Place search is temporarily unavailable")
+
+
+@router.get("/reverse-geocode", summary="Resolve coordinates to a readable Indian address (OpenStreetMap Nominatim)")
+def reverse_geocode(
+    lat: float = Query(..., ge=-90, le=90),
+    lng: float = Query(..., ge=-180, le=180),
+):
+    try:
+        r = _nominatim("reverse", {"lat": lat, "lon": lng, "format": "jsonv2", "addressdetails": 1, "zoom": 17})
+        if "error" in r:
+            raise HTTPException(status_code=404, detail="No address found for this point")
+        addr = r.get("address", {})
+        return {
+            "source": "OpenStreetMap Nominatim",
+            "latitude": lat,
+            "longitude": lng,
+            "label": _short_label(addr, f"{lat:.4f}, {lng:.4f}"),
+            "display_name": r.get("display_name"),
+            "country_code": addr.get("country_code"),
+            "postcode": addr.get("postcode"),
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Nominatim reverse geocode failed: {e}")
+        raise HTTPException(status_code=502, detail="Reverse geocoding is temporarily unavailable")

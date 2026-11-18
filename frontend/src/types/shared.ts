@@ -134,12 +134,18 @@ export interface HumanitarianResource {
   verification_status: VerificationStatus;
   last_verified_at: string;
   is_demo: boolean;
-  inventory_summary?: {
-    item_name: string;
-    quantity: number;
-    unit: string;
-    status: ResourceOperationalStatus;
-  }[];
+  inventory_items?: ResourceInventoryItem[];
+}
+
+export interface ResourceInventoryItem {
+  id: string;
+  resource_id: string;
+  item_name: string;
+  quantity: number;
+  unit: string;
+  reserved_quantity: number;
+  inventory_status: 'available' | 'limited' | 'out_of_stock' | 'reserved';
+  updated_at: string;
 }
 
 export interface SearchGroup {

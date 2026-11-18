@@ -1,65 +1,103 @@
 /** @type {import('tailwindcss').Config} */
+// Visual language follows the khe design system (ds.khe.money): paper and ink,
+// a 12-step "sand" neutral ramp, hairline borders, three radii (badge 6 / control 8
+// / card 12), Inter for text, Geist Mono for numbers, yellow only as a highlighter.
+// Token names are kept from the original theme so every component picks it up:
+//   surface → paper   charcoal → ink   terracotta → ink (primary actions)
+//   dustyblue → khe "guide" blue   sand → khe yellow highlighter
+//   sage → success green   emergency → red (life-safety only)
 export default {
   content: ['./src/**/*.{astro,html,js,jsx,md,mdx,svelte,ts,tsx,vue}'],
   theme: {
     extend: {
       colors: {
         surface: {
-          DEFAULT: '#F5F0E8',
-          raised: '#EDE8DF',
-          inset: '#DDD8CF',
-          card: '#F8F4EE',
-          muted: '#E6E0D5',
+          DEFAULT: '#FDFDFC', // sand-1  page
+          raised: '#F9F9F8',  // sand-2  subtle
+          inset: '#F1F0EF',   // sand-3  hover
+          card: '#FFFFFF',    // surface
+          muted: '#E9E8E6',   // sand-4
         },
         charcoal: {
-          DEFAULT: '#2C2824',
-          dark: '#1A1816',
-          light: '#4A443E',
-          muted: '#736B63',
+          DEFAULT: '#21201C', // sand-12 ink
+          dark: '#111110',
+          light: '#3B3A37',
+          muted: '#63635E',   // sand-11 secondary text
         },
         terracotta: {
-          DEFAULT: '#B5674D',
-          hover: '#9E553D',
-          light: '#EEDDD8',
-          dark: '#7D3B26',
+          DEFAULT: '#21201C',
+          hover: '#3A3935',
+          light: '#F1F0EF',
+          dark: '#21201C',
         },
         dustyblue: {
-          DEFAULT: '#5C7A8E',
-          hover: '#4C6779',
-          light: '#DCE5EB',
-          dark: '#384E5D',
+          DEFAULT: '#0267C7',
+          hover: '#004B97',
+          light: '#E1F0FF',
+          dark: '#004B97',
         },
         sage: {
-          DEFAULT: '#7A9B82',
-          hover: '#66846D',
-          light: '#E2EBE4',
-          dark: '#48634E',
+          DEFAULT: '#2F7A4B',
+          hover: '#256139',
+          light: '#E3F1E7',
+          dark: '#1D4D2F',
         },
         sand: {
-          DEFAULT: '#C9A96E',
-          hover: '#B59458',
-          light: '#F4EEDA',
-          dark: '#82683A',
+          DEFAULT: '#FFE556',
+          hover: '#F0D43A',
+          light: '#FFF6C8',
+          dark: '#655406',
         },
         emergency: {
-          DEFAULT: '#C0392B',
-          soft: '#FADBD8',
-          hover: '#A93226',
+          DEFAULT: '#C4122F',
+          soft: '#FCE4E7',
+          hover: '#A30E27',
+        },
+        // Tailwind's stone ramp is replaced by the khe sand ramp
+        stone: {
+          50: '#F9F9F8',
+          100: '#F1F0EF',
+          200: '#E9E8E6',
+          300: '#DAD9D6',
+          400: '#BCBBB5',
+          500: '#8D8D86',
+          600: '#63635E',
+          700: '#3B3A37',
+          800: '#2A2A28',
+          900: '#21201C',
         },
       },
       boxShadow: {
-        'neu-raised': '6px 6px 14px #D3CDC2, -6px -6px 14px #FFFFFF',
-        'neu-raised-sm': '3px 3px 8px #D3CDC2, -3px -3px 8px #FFFFFF',
-        'neu-inset': 'inset 4px 4px 8px #D3CDC2, inset -4px -4px 8px #FFFFFF',
-        'neu-inset-sm': 'inset 2px 2px 5px #D3CDC2, inset -2px -2px 5px #FFFFFF',
-        'neu-flat': '2px 2px 6px #D8D2C7, -2px -2px 6px #FFFFFF',
+        'neu-raised': 'none',
+        'neu-raised-sm': 'none',
+        'neu-inset': 'none',
+        'neu-inset-sm': 'none',
+        'neu-flat': 'none',
+        sm: 'none',
+        DEFAULT: 'none',
+        md: '0 12px 32px -12px rgba(0,0,0,0.22), 0 2px 6px rgba(0,0,0,0.06)',
+        lg: '0 12px 32px -12px rgba(0,0,0,0.22), 0 2px 6px rgba(0,0,0,0.06)',
+        xl: '0 24px 60px -20px rgba(0,0,0,0.35)',
+        '2xl': '0 24px 60px -20px rgba(0,0,0,0.35)',
+      },
+      borderRadius: {
+        DEFAULT: '6px',
+        md: '8px',
+        lg: '8px',
+        xl: '12px',
+        '2xl': '12px',
+        '3xl': '16px',
+      },
+      fontWeight: {
+        extrabold: '600',
+        black: '700',
       },
       fontFamily: {
-        sans: ['Inter', 'system-ui', '-apple-system', 'Segoe UI', 'Roboto', 'sans-serif'],
-        mono: ['JetBrains Mono', 'Menlo', 'monospace'],
+        sans: ['Inter', 'system-ui', 'sans-serif'],
+        display: ['Inter', 'system-ui', 'sans-serif'],
+        mono: ['"Geist Mono"', 'ui-monospace', 'monospace'],
       },
     },
   },
   plugins: [],
 };
-

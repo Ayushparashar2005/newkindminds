@@ -186,6 +186,11 @@ class AssistanceRequest(Base):
 
     user = relationship("User", back_populates="assistance_requests")
     disaster = relationship("DisasterEvent", back_populates="assistance_requests")
+    assigned_organization = relationship("Organization", lazy="joined")
+
+    @property
+    def assigned_organization_name(self):
+        return self.assigned_organization.name if self.assigned_organization else None
 
 
 class SOPDocument(Base):

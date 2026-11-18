@@ -149,3 +149,20 @@ def add_inventory_item(
     db.commit()
     db.refresh(inv)
     return inv
+
+
+@router.delete(
+    "/{resource_id}/inventory/{item_id}",
+    summary="Remove an inventory line item from a resource",
+    status_code=204,
+)
+def delete_inventory_item(resource_id: str, item_id: str, db: DbSession):
+    inv = (
+        db.query(ResourceInventory)
+        .filter(ResourceInventory.id == item_id, ResourceInventory.resource_id == resource_id)
+        .first()
+    )
+    if not inv:
+        raise HTTPException(status_code=404, detail="Inventory item not found")
+    db.delete(inv)
+    db.commit()

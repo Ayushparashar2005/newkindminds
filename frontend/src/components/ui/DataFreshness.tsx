@@ -12,7 +12,7 @@ export const DataFreshness: React.FC<DataFreshnessProps> = ({
   source,
   isVerified = true
 }) => {
-  const formatted = timestamp ? new Date(timestamp).toLocaleDateString(undefined, {
+  const formatted = timestamp ? new Date(timestamp).toLocaleDateString('en-IN', {
     month: 'short',
     day: 'numeric',
     hour: '2-digit',
@@ -20,7 +20,7 @@ export const DataFreshness: React.FC<DataFreshnessProps> = ({
   }) : 'Recently verified';
 
   return (
-    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-charcoal-muted mt-2 pt-2 border-t border-stone-200">
+    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-charcoal-muted mt-2 pt-2 border-t border-stone-200">
       <span className="flex items-center gap-1">
         <Clock className="w-3 h-3 text-stone-400" />
         Verified: {formatted}

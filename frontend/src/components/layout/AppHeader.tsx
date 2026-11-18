@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
+import { api } from '../../lib/api';
 import { PanelSwitcher } from './PanelSwitcher';
-import { Activity, ShieldCheck, MapPin } from 'lucide-react';
+import { MapPin } from 'lucide-react';
 
 interface AppHeaderProps {
   currentPanel: 'helper' | 'needer';
@@ -9,63 +10,48 @@ interface AppHeaderProps {
 
 export const AppHeader: React.FC<AppHeaderProps> = ({
   currentPanel,
-  activeDisasterName = "Active Cyclone Response (Western Coast)"
+  activeDisasterName: initialName
 }) => {
+  const [activeDisasterName, setActiveDisasterName] = useState(initialName);
+  useEffect(() => {
+    if (initialName) return;
+    api.getDisasters({ status: 'active' })
+      .then((list) => {
+        if (list.length) setActiveDisasterName(list.length > 1 ? `${list[0].name} and ${list.length - 1} more` : list[0].name);
+      })
+      .catch(() => { /* backend offline: hide the strip */ });
+  }, [initialName]);
+
   return (
-    <header
-      className="sticky top-0 z-30 bg-surface/95 backdrop-blur-md border-b border-stone-200/80 px-4 lg:px-8 py-3"
-      role="banner"
-    >
-      {/* Skip-to-content (WCAG 2.4.1) */}
-      <a
-        href="#main-content"
-        className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:px-4 focus:py-2 focus:bg-terracotta focus:text-white focus:rounded-lg focus:text-sm focus:font-bold"
-      >
-        Skip to main content
-      </a>
-
-      <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-3">
-        {/* Brand */}
-        <div className="flex items-center gap-3">
-          <a href="/" className="flex items-center gap-2 group" aria-label="KindMinds — return to home">
-            <div
-              className="w-8 h-8 rounded-lg bg-terracotta text-white flex items-center justify-center font-bold text-base shadow-sm group-hover:bg-terracotta-hover transition"
-              aria-hidden="true"
-            >
-              KM
-            </div>
-            <div>
-              <span className="font-extrabold text-lg text-charcoal tracking-tight">KindMinds</span>
-              <span className="text-[10px] block uppercase tracking-wider text-charcoal-muted font-semibold">
-                Humanitarian &amp; Mental Health Response
-              </span>
-            </div>
-          </a>
-
-          {/* Active Disaster Pill */}
-          {activeDisasterName && (
-            <div
-              className="hidden lg:flex items-center gap-1.5 px-2.5 py-1 bg-amber-50 border border-amber-200 rounded-full text-xs text-amber-900 font-medium"
-              role="status"
-              aria-label={`Active situation: ${activeDisasterName}`}
-            >
-              <Activity className="w-3.5 h-3.5 text-amber-600 animate-pulse" aria-hidden="true" />
-              <span className="truncate max-w-[280px]">{activeDisasterName}</span>
-            </div>
-          )}
+    <header className="sticky top-0 z-30 bg-surface/95 backdrop-blur border-b border-stone-200" role="banner">
+      {/* Shown only while a disaster is active */}
+      {activeDisasterName && (
+        <div className="border-b border-stone-200 text-charcoal-muted text-[13px]" role="status">
+          <div className="max-w-7xl mx-auto px-4 lg:px-8 py-1.5 flex items-center gap-2">
+                        <span className="truncate">
+              <span className="mark font-medium">Active now</span> <span className="text-charcoal">{activeDisasterName}</span>
+            </span>
+            <a href="/disaster/map" className="ml-auto shrink-0 font-medium text-charcoal underline decoration-stone-300 underline-offset-[3px] hover:decoration-charcoal">
+              See on map
+            </a>
+          </div>
         </div>
+      )}
 
-        {/* Panel Switcher & Actions */}
-        <nav className="flex items-center gap-4" aria-label="Global navigation">
+      <div className="max-w-7xl mx-auto px-4 lg:px-8 py-2.5 flex flex-col md:flex-row items-center justify-between gap-3">
+        <a href="/" className="flex items-baseline gap-2.5" aria-label="KindMinds home">
+          <span className="signage text-[22px] text-charcoal">KindMinds</span>
+          <span className="hidden sm:inline text-[13px] text-charcoal-muted">Disaster relief and mental health support, India</span>
+        </a>
+
+        <nav className="flex items-center gap-3" aria-label="Global navigation">
           <PanelSwitcher currentPanel={currentPanel} />
-
           <a
             href="/disaster/map"
-            className="hidden sm:inline-flex items-center gap-1.5 text-xs font-semibold text-charcoal-light hover:text-charcoal px-3 py-1.5 rounded-lg border border-stone-300 hover:bg-surface-raised transition"
-            aria-label="Open interactive Disaster Map"
+            className="hidden sm:inline-flex items-center gap-1.5 h-[34px] px-3 text-sm font-medium text-charcoal rounded-lg border border-stone-300 bg-surface-card hover:bg-surface-inset transition-colors"
           >
-            <MapPin className="w-3.5 h-3.5 text-terracotta" aria-hidden="true" />
-            Disaster Map
+            <MapPin className="w-4 h-4" aria-hidden="true" />
+            Relief map
           </a>
         </nav>
       </div>
